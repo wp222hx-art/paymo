@@ -77,10 +77,16 @@ class ApiGateway {
 
     ApiResponse resp;
     try {
-      // 身份校验链 (7.4)
-      if (!path.startsWith('/v1/auth/login') &&
-          !path.startsWith('/v1/auth/register') &&
-          _currentUserId == null) {
+      // 身份校验链 (7.4)：登录前可匿名访问的接口白名单（网关 L2 层配置）
+      const anonymousPaths = [
+        '/v1/auth/login',
+        '/v1/auth/register',
+        '/v1/auth/sms/send',
+        '/v1/auth/password/reset',
+        '/v1/auth/risk/challenge',
+      ];
+      if (_currentUserId == null &&
+          !anonymousPaths.any((p) => path.startsWith(p))) {
         throw ApiException(40301, '未登录/Token 失效');
       }
       if (kycRequired != null && me.kycLevel < kycRequired) {

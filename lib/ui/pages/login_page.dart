@@ -14,7 +14,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   String? _selected;
-  final _code = TextEditingController();
+  final _code = TextEditingController(text: '123456');
   bool _sent = false;
   bool _loading = false;
   int _countdown = 0;
@@ -106,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
                               controller: _code,
                               keyboardType: TextInputType.number,
                               maxLength: 6,
-                              decoration: const InputDecoration(hintText: '短信验证码', counterText: '', prefixIcon: Icon(Icons.sms_outlined, size: 20)),
+                              decoration: const InputDecoration(hintText: '短信验证码（演示 123456）', counterText: '', prefixIcon: Icon(Icons.sms_outlined, size: 20)),
                             ),
                           ),
                           const SizedBox(width: 10),
