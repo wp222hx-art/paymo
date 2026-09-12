@@ -101,7 +101,8 @@ class ApiGateway {
           throw ApiException(40304, '敏感操作需支付密码二次验证（令牌 5 分钟有效）');
         }
       }
-      if (me.status == UserStatus.frozen &&
+      if (_currentUserId != null &&
+          me.status == UserStatus.frozen &&
           (path.contains('withdraw') || path.contains('accept'))) {
         throw ApiException(50701, '风控拦截：账户已冻结，请申诉解冻');
       }
