@@ -185,6 +185,8 @@ class ApiGateway {
         return _debtPoints(m, seg, b);
       case 'clearance':
         return _clearance(m, seg, b);
+      case 'bank':
+        return _bank(m, seg, b);
       case 'admin':
         return _admin(m, seg, b);
       default:
@@ -365,7 +367,8 @@ class ApiGateway {
     }
     if (s[2] == 'import') return _importDebt(b);
     final c = db.debtCases.firstWhere((c) => c.caseId == s[2], orElse: () => throw ApiException(40401, '案件不存在'));
-    if (c.userId != me.userId && !me.role.isAdmin) throw ApiException(40303, '业务实体归属校验失败：非本人案件');
+    final tenantOk = me.role.isBank && c.creditorName == me.orgName;
+    if (c.userId != me.userId && !me.role.isAdmin && !tenantOk) throw ApiException(40303, '业务实体归属校验失败：非本人/本机构案件');
     return {'case_id': c.caseId, 'outstanding': c.outstanding};
   }
 
@@ -830,23 +833,28 @@ class ApiGateway {
       pts = min(pts, c.outstanding);
       // FIFO 消耗批次，按比例计算现金背书
       double need = pts, cash = 0;
+      final consumedMap = <String, double>{};
       for (final batch in db.debtPoints.where((x) => x.userId == me.userId && x.remaining > 0).toList().reversed) {
         if (need <= 0) break;
         final use = min(need, batch.remaining);
         cash += batch.cashBacked * (use / batch.faceValue);
         batch.consumed += use;
+        consumedMap[batch.batchId] = use;
         need -= use;
       }
       final reduction = pts - cash;
-      final cl = ClearanceOrder(clearanceId: db.nextId('CL'), userId: me.userId, caseId: c.caseId, bankName: c.creditorName, points: pts, cashRemitted: cash, reductionAccepted: reduction, createdAt: DateTime.now());
-      cl.history.add(ClearanceEvent(10, '用户提交 ${pts.toStringAsFixed(1)} DP · 现金背书 ${(cash / pts * 100).toStringAsFixed(0)}%', DateTime.now()));
+      final cl = ClearanceOrder(clearanceId: db.nextId('CL'), userId: me.userId, caseId: c.caseId, bankName: c.creditorName, points: pts, cashRemitted: cash, reductionAccepted: reduction, consumedBatches: consumedMap, createdAt: DateTime.now());
+      cl.history.add(ClearanceEvent(10, '用户提交 ${pts.toStringAsFixed(1)} DP · 现金背书 ${(cash / pts * 100).toStringAsFixed(0)}%', DateTime.now(), operator: 'USER:${me.userId}'));
       db.clearances.insert(0, cl);
       _postLedger('clearance_remit', cl.clearanceId, [
         ('债务积分现金备付金 · ${me.userId}', 'D', cash, 0),
         ('银行清缴在途 · ${c.creditorName}', 'C', cash, 0),
       ]);
-      _runBankClearance(cl, c);
-      return {'clearance_id': cl.clearanceId, 'points': pts, 'cash_remitted': cash, 'reduction_requested': reduction, 'status': cl.status, 'webhook': 'CLEARANCE.SUBMITTED'};
+      // 有接入开放平台的银行（存在该行专员账号）走人工受理；其余债权方走自动 Webhook 模拟
+      final hasBankOfficer = db.users.values.any((u) => u.role.isBank && u.orgName == c.creditorName);
+      if (!hasBankOfficer) _runBankClearance(cl, c);
+      db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'CLEARANCE.SUBMITTED · 清缴单已提交', body: '${cl.clearanceId} 已推送至 ${c.creditorName}${hasBankOfficer ? '，等待清收专员受理' : '，银行系统自动处理中'}。', at: DateTime.now()));
+      return {'clearance_id': cl.clearanceId, 'points': pts, 'cash_remitted': cash, 'reduction_requested': reduction, 'status': cl.status, 'processing': hasBankOfficer ? 'manual (bank officer)' : 'auto (webhook)', 'webhook': 'CLEARANCE.SUBMITTED'};
     }
     throw ApiException(40401, '资源不存在');
   }
@@ -879,11 +887,104 @@ class ApiGateway {
       cl.status = 50;
       cl.history.add(ClearanceEvent(50, 'Webhook CLEARANCE.COMPLETED', DateTime.now()));
       db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'CLEARANCE.COMPLETED · 银行已核销 ${cl.points.toStringAsFixed(1)} DP', body: '${c.creditorName} 已核销债务 ¥${cl.points.toStringAsFixed(2)}，剩余待还 ¥${c.outstanding.toStringAsFixed(2)}。', at: DateTime.now()));
-      if (c.outstanding <= 0.005) _issueCertificate(c);
+      if (c.outstanding <= 0.005) _issueCertificate(c, issuedBy: '${c.creditorName} 系统自动');
     });
   }
 
-  void _issueCertificate(DebtCase c) {
+  // ───── 银行侧 B 端 API（开放平台 Kong-Open · AppKey + 签名） ─────
+  dynamic _bank(String m, List<String> s, Map<String, dynamic> b) {
+    if (!me.role.isBank) throw ApiException(40303, '权限不足：银行侧 API 仅限债权方机构账号');
+    final org = me.orgName!;
+    if (s.length == 3 && s[2] == 'clearances') {
+      final mine = db.clearances.where((c) => c.bankName == org).toList();
+      return {'org': org, 'total': mine.length, 'pending': mine.where((c) => c.status == 10).length};
+    }
+    if (s.length == 3 && s[2] == 'cases') {
+      return {'org': org, 'total': db.debtCases.where((c) => c.creditorName == org).length};
+    }
+    if (s.length == 5 && s[2] == 'clearances') {
+      final cl = db.clearances.firstWhere((c) => c.clearanceId == s[3], orElse: () => throw ApiException(40401, '清缴单不存在'));
+      // ABAC：租户隔离
+      if (cl.bankName != org) throw ApiException(40303, '业务实体归属校验失败：该清缴单属于 ${cl.bankName}');
+      final c = db.debtCases.firstWhere((c) => c.caseId == cl.caseId);
+      final op = 'BANK:${me.nickname}';
+      switch (s[4]) {
+        case 'accept':
+          if (cl.status != 10) throw ApiException(40901, '状态非法：${ClearanceStatus.label(cl.status)} 不可受理');
+          cl.status = 20;
+          cl.bankOperator = me.nickname;
+          cl.history.add(ClearanceEvent(20, '受理 · ${b['note'] ?? '核验 Consent ${c.consentId} / 积分背书 ${(cl.cashRemitted / cl.points * 100).toStringAsFixed(0)}%'}', DateTime.now(), operator: op));
+          return {'clearance_id': cl.clearanceId, 'status': cl.status, 'webhook': 'CLEARANCE.ACCEPTED'};
+        case 'confirm-remit':
+          if (cl.status != 20) throw ApiException(40901, '状态非法：需先受理');
+          cl.status = 30;
+          cl.history.add(ClearanceEvent(30, '确认收到平台存管汇款 ¥${cl.cashRemitted.toStringAsFixed(2)} · 银联流水 ${b['bank_ref'] ?? db.nextId('UNP')}', DateTime.now(), operator: op));
+          _postLedger('clearance_settle', cl.clearanceId, [
+            ('银行清缴在途 · $org', 'D', cl.cashRemitted, 0),
+            ('债权方实收 · $org', 'C', cl.cashRemitted, 0),
+          ]);
+          return {'clearance_id': cl.clearanceId, 'status': cl.status, 'cash_confirmed': cl.cashRemitted};
+        case 'write-off':
+          if (cl.status != 30) throw ApiException(40901, '状态非法：需先确认资金到账');
+          final acceptReduction = b['accept_reduction'] != false;
+          final writeOff = acceptReduction ? cl.points : cl.cashRemitted;
+          cl.status = 40;
+          c.outstanding = max(0, c.outstanding - writeOff);
+          c.cashPaid += cl.cashRemitted;
+          c.pointsCleared += writeOff;
+          cl.history.add(ClearanceEvent(40, '核销债务 ¥${writeOff.toStringAsFixed(2)}（现金 ¥${cl.cashRemitted.toStringAsFixed(2)} + 减免 ¥${(writeOff - cl.cashRemitted).toStringAsFixed(2)}）${acceptReduction ? '' : ' · 未接受协商减免'}', DateTime.now(), operator: op));
+          final u = db.users[cl.userId]!;
+          final save = _currentUserId;
+          _currentUserId = cl.userId;
+          _bumpRedeem(writeOff);
+          _currentUserId = save;
+          u.creditScore += 3;
+          // 完成
+          cl.status = 50;
+          cl.history.add(ClearanceEvent(50, 'Webhook CLEARANCE.COMPLETED → 平台', DateTime.now()));
+          db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'CLEARANCE.COMPLETED · $org 已核销 ${writeOff.toStringAsFixed(1)} DP', body: '清收专员 ${me.nickname} 已核销债务 ¥${writeOff.toStringAsFixed(2)}，剩余待还 ¥${c.outstanding.toStringAsFixed(2)}。', at: DateTime.now()));
+          final cleared = c.outstanding <= 0.005;
+          return {'clearance_id': cl.clearanceId, 'status': cl.status, 'written_off': writeOff, 'case_outstanding': c.outstanding, 'case_cleared': cleared, 'next': cleared ? 'issue certificate' : null};
+        case 'reject':
+          if (cl.status >= 40) throw ApiException(40901, '已核销不可退回');
+          final reason = b['reason'] as String? ?? '资料不全';
+          cl.status = 90;
+          cl.rejectReason = reason;
+          cl.history.add(ClearanceEvent(90, '退回 · $reason', DateTime.now(), operator: op));
+          // 积分回滚（按批次精确还原）+ 备付金红字冲正
+          if (cl.consumedBatches.isNotEmpty) {
+            for (final e in cl.consumedBatches.entries) {
+              final batch = db.debtPoints.where((x) => x.batchId == e.key).firstOrNull;
+              if (batch != null) batch.consumed = max(0, batch.consumed - e.value);
+            }
+          } else {
+            // 种子数据无批次映射：按 FIFO 还原
+            double back = cl.points;
+            for (final batch in db.debtPoints.where((x) => x.userId == cl.userId && x.consumed > 0)) {
+              if (back <= 0) break;
+              final r = min(back, batch.consumed);
+              batch.consumed -= r;
+              back -= r;
+            }
+          }
+          _postLedger('clearance_reverse', cl.clearanceId, [
+            ('银行清缴在途 · $org', 'D', cl.cashRemitted, 0),
+            ('债务积分现金备付金 · ${cl.userId}', 'C', cl.cashRemitted, 0),
+          ]);
+          db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'CLEARANCE.REJECTED · 清缴单被退回', body: '$org 退回 ${cl.clearanceId}：$reason。积分已返还至你的积分池。', at: DateTime.now()));
+          return {'clearance_id': cl.clearanceId, 'status': 90, 'points_returned': cl.points};
+        case 'issue-certificate':
+          if (c.outstanding > 0.005) throw ApiException(40901, '案件余额未归零（¥${c.outstanding.toStringAsFixed(2)}），不可签发结清证明');
+          if (c.certificateId != null) throw ApiException(40901, '已签发过结清证明');
+          _issueCertificate(c, issuedBy: me.nickname);
+          final cert = db.certificates.firstWhere((x) => x.caseId == c.caseId);
+          return {'certificate_id': cert.certId, 'cert_no': cert.certNo, 'webhook': 'CERTIFICATE.ISSUED'};
+      }
+    }
+    throw ApiException(40401, '资源不存在');
+  }
+
+  void _issueCertificate(DebtCase c, {String issuedBy = 'SYSTEM'}) {
     c.status = 3;
     c.negotiationStatus = 4;
     final plan = db.plans.where((p) => p.planId == c.planId).firstOrNull;
@@ -901,6 +1002,7 @@ class ApiGateway {
       pointsReduction: c.originalDebt - c.cashPaid - (plan?.paidAmount ?? 0),
       issuedAt: DateTime.now(),
       signature: 'SM2:${_rand.nextInt(1 << 30).toRadixString(16).padLeft(8, '0')}…${_rand.nextInt(1 << 30).toRadixString(16)}',
+      issuedBy: issuedBy,
     );
     db.certificates.insert(0, cert);
     c.certificateId = cert.certId;

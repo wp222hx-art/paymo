@@ -8,12 +8,14 @@ enum UserRole {
   creator('创作者', 'C端 · 内容变现 + 流量还债'),
   merchant('商家', 'B端 · 任务发布方 / 品牌方'),
   riskOfficer('风控专员', 'M02 · 风控管理域'),
-  opsManager('运营经理', 'M01 · 运营管理域');
+  opsManager('运营经理', 'M01 · 运营管理域'),
+  bankOfficer('银行清收专员', '债权方 · 开放平台接入');
 
   final String label;
   final String desc;
   const UserRole(this.label, this.desc);
   bool get isAdmin => this == riskOfficer || this == opsManager;
+  bool get isBank => this == bankOfficer;
 }
 
 /// 用户状态机：1正常 2冻结 3封禁 4注销中 5已注销
@@ -68,6 +70,7 @@ class UserProfile {
   final String inviteCode;
   bool hasPayPassword;
   int creditScore;
+  final String? orgName; // 银行/机构角色所属机构（数据隔离键）
 
   UserProfile({
     required this.userId,
@@ -94,6 +97,7 @@ class UserProfile {
     required this.inviteCode,
     this.hasPayPassword = true,
     this.creditScore = 600,
+    this.orgName,
   });
 
   bool can(String perm) =>
@@ -393,6 +397,7 @@ class ClearanceStatus {
   static const remitted = 30;
   static const written = 40;
   static const done = 50;
+  static const rejected = 90;
   static const flow = [10, 20, 30, 40, 50];
   static String label(int s) => switch (s) {
     10 => '已提交',
@@ -400,6 +405,7 @@ class ClearanceStatus {
     30 => '资金划付',
     40 => '银行核销',
     50 => '已完成',
+    90 => '银行退回',
     _ => '未知',
   };
 }
@@ -408,7 +414,8 @@ class ClearanceEvent {
   final int status;
   final String note;
   final DateTime at;
-  ClearanceEvent(this.status, this.note, this.at);
+  final String operator; // USER / BANK:xxx / SYSTEM
+  ClearanceEvent(this.status, this.note, this.at, {this.operator = 'SYSTEM'});
 }
 
 class ClearanceOrder {
@@ -421,6 +428,9 @@ class ClearanceOrder {
   final double reductionAccepted;
   int status;
   String? certificateId;
+  String? bankOperator; // 受理专员
+  String? rejectReason;
+  final Map<String, double> consumedBatches; // batchId → 消耗量，用于退回回滚
   final List<ClearanceEvent> history;
   final DateTime createdAt;
   ClearanceOrder({
@@ -433,9 +443,13 @@ class ClearanceOrder {
     required this.reductionAccepted,
     this.status = ClearanceStatus.submitted,
     this.certificateId,
+    this.bankOperator,
+    this.rejectReason,
+    Map<String, double>? consumedBatches,
     List<ClearanceEvent>? history,
     required this.createdAt,
-  }) : history = history ?? [];
+  })  : history = history ?? [],
+        consumedBatches = consumedBatches ?? {};
 }
 
 /// 银行出具的《债务结清证明》
@@ -452,6 +466,7 @@ class ClearanceCertificate {
   final double pointsReduction;
   final DateTime issuedAt;
   final String signature;
+  final String issuedBy; // 签发专员
   ClearanceCertificate({
     required this.certId,
     required this.certNo,
@@ -465,6 +480,7 @@ class ClearanceCertificate {
     required this.pointsReduction,
     required this.issuedAt,
     required this.signature,
+    this.issuedBy = 'SYSTEM',
   });
 }
 

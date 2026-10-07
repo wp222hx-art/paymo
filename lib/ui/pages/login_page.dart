@@ -177,10 +177,10 @@ class _UserTile extends StatelessWidget {
                   Row(children: [
                     Text(user.nickname, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                     const SizedBox(width: 6),
-                    Tag(user.role.label, color: user.role.isAdmin ? XgColors.violet : XgColors.navy),
+                    Tag(user.role.label, color: user.role.isBank ? XgColors.success : (user.role.isAdmin ? XgColors.violet : XgColors.navy)),
                   ]),
                   const SizedBox(height: 2),
-                  Text('${user.role.desc} · ${KycLevel.name(user.kycLevel)}', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
+                  Text('${user.orgName ?? user.role.desc} · ${KycLevel.name(user.kycLevel)}', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
                 ],
               ),
             ),

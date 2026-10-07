@@ -54,7 +54,7 @@ class ProfilePage extends StatelessWidget {
               ]),
             ),
           ),
-          if (!me.role.isAdmin)
+          if (!me.role.isAdmin && !me.role.isBank)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Row(children: [
@@ -78,7 +78,7 @@ class ProfilePage extends StatelessWidget {
           XCard(
             padding: EdgeInsets.zero,
             child: Column(children: [
-              if (!me.role.isAdmin) ...[
+              if (!me.role.isAdmin && !me.role.isBank) ...[
                 _item(context, Icons.account_balance_outlined, '债务中心 · 负债画像 / 还款方案', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtCenterPage()))),
                 _item(context, Icons.token_outlined, '债务积分 · 银行清缴 / 结清证明（${s.myAvailablePoints.toStringAsFixed(0)} DP）', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtPointsPage()))),
                 _item(context, Icons.shopping_bag_outlined, '消费平债商城 · 利润 × 倍率抵债', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OffsetShopPage()))),

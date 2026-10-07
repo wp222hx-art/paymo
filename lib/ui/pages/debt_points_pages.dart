@@ -242,7 +242,7 @@ class _DebtPointsPageState extends State<DebtPointsPage> {
             ]),
           ),
           const SizedBox(height: 8),
-          const Text('合规校验：Consent 有效 · KYC ≥ L3 · 幂等级别 L4（业务单号 + 版本号，Saga 状态机）· 银行 Webhook 回调推进状态', style: TextStyle(fontSize: 10, color: XgColors.textSecondary)),
+          Text('合规校验：Consent 有效 · KYC ≥ L3 · 幂等级别 L4（Saga 状态机）· ${s.db.users.values.any((u) => u.role.isBank && u.orgName == selected.creditorName) ? '该行已接入开放平台，由清收专员人工受理、确认收款、核销并签发结清证明' : '该债权方走系统对接，Webhook 自动推进'}', style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
           const SizedBox(height: 14),
           FilledButton(
             onPressed: pts <= 0
@@ -270,16 +270,33 @@ class _ClearanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final done = c.status == ClearanceStatus.done;
+    final rejected = c.status == ClearanceStatus.rejected;
     return XCard(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Expanded(child: Text(c.bankName, style: const TextStyle(fontWeight: FontWeight.w700))),
-          Tag(ClearanceStatus.label(c.status), color: done ? XgColors.success : XgColors.warning),
+          Tag(ClearanceStatus.label(c.status), color: done ? XgColors.success : (rejected ? XgColors.danger : XgColors.warning)),
         ]),
-        Text('${c.clearanceId} · ${fmtDate(c.createdAt)}', style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
+        Text('${c.clearanceId} · ${fmtDate(c.createdAt)}${c.bankOperator != null ? ' · 受理专员 ${c.bankOperator}' : ''}', style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
+        if (c.status == 10) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: XgColors.gold.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+            child: const Row(children: [Icon(Icons.hourglass_top, size: 14, color: XgColors.goldDark), SizedBox(width: 6), Expanded(child: Text('已推送至银行清收专员，等待人工受理（SLA 1 个工作日）', style: TextStyle(fontSize: 11, color: XgColors.goldDark)))]),
+          ),
+        ],
+        if (rejected) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: XgColors.danger.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+            child: Row(children: [const Icon(Icons.undo, size: 14, color: XgColors.danger), const SizedBox(width: 6), Expanded(child: Text('银行退回：${c.rejectReason ?? ''} · 积分已返还至积分池，可补充资料后重新提交', style: const TextStyle(fontSize: 11, color: XgColors.danger)))]),
+          ),
+        ],
         const SizedBox(height: 14),
-        StateFlow(steps: ClearanceStatus.flow, current: c.status, label: ClearanceStatus.label),
+        if (!rejected) StateFlow(steps: ClearanceStatus.flow, current: c.status, label: ClearanceStatus.label),
         const SizedBox(height: 12),
         Row(children: [
           StatTile(label: '核销积分', value: '${c.points.toStringAsFixed(1)} DP'),
@@ -369,6 +386,7 @@ void showCertificate(BuildContext context, ClearanceCertificate c) {
           KV('其中：现金清偿', fmtMoney(c.cashPaid)),
           KV('其中：积分减免', fmtMoney(c.pointsReduction), vColor: XgColors.coral),
           KV('出具日期', fmtDay(c.issuedAt)),
+          KV('签发人', c.issuedBy),
           KV('电子签章', c.signature, vColor: XgColors.textSecondary),
           const SizedBox(height: 14),
           Row(mainAxisAlignment: MainAxisAlignment.end, children: [

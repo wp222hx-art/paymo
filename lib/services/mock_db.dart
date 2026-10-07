@@ -115,6 +115,22 @@ class MockDb {
       permissions: ['ops.dashboard.read', 'content.moderation.approve', 'content.moderation.reject', 'task.audit', 'user.search', 'ops.coupon.issue'],
       inviteCode: 'XG6M4W2Z',
     ),
+    'U1006': UserProfile(
+      userId: 'U1006',
+      uuid: 'f8c0b5d6a1e39f5c0b6f70819203142a',
+      nickname: '顾承业',
+      initials: '顾',
+      role: UserRole.bankOfficer,
+      kycLevel: 5,
+      city: '深圳',
+      occupation: '清收专员 · 协商还款组',
+      mbti: 'ESTJ',
+      level: 1,
+      capabilityTags: ['协商还款', '账务核销', '合规审查'],
+      permissions: ['bank.clearance.view', 'bank.clearance.accept', 'bank.clearance.confirm_remit', 'bank.clearance.write_off', 'bank.clearance.reject', 'bank.certificate.issue', 'debt.case.view.tenant'],
+      inviteCode: 'XGBK01CM',
+      orgName: '招商银行信用卡中心',
+    ),
   };
 
   late final Map<String, DebtProfile> debtProfiles = {
@@ -262,8 +278,14 @@ class MockDb {
   ];
 
   late final List<DebtPointBatch> debtPoints = [
-    DebtPointBatch(batchId: 'DP7001', userId: 'U1001', source: DebtPointSource.task, faceValue: 205.2, cashBacked: 205.2, refId: 'ST6001', title: '任务结算 · 星辰晨露精华短视频（60%）', createdAt: DateTime(2026, 9, 8, 14, 22)),
-    DebtPointBatch(batchId: 'DP7002', userId: 'U1001', source: DebtPointSource.content, faceValue: 257.2, cashBacked: 257.2, refId: 'C7002', title: '内容收益 · 《餐饮店倒闭后…》（60%）', createdAt: DateTime(2026, 9, 2, 10, 5)),
+    // DP7001 + DP7002 = 462.4 → 已提交清缴单 CL8002（待银行受理）
+    DebtPointBatch(batchId: 'DP7001', userId: 'U1001', source: DebtPointSource.task, faceValue: 205.2, cashBacked: 205.2, refId: 'ST6001', title: '任务结算 · 星辰晨露精华短视频（60%）', consumed: 205.2, createdAt: DateTime(2026, 9, 8, 14, 22)),
+    DebtPointBatch(batchId: 'DP7002', userId: 'U1001', source: DebtPointSource.content, faceValue: 257.2, cashBacked: 257.2, refId: 'C7002', title: '内容收益 · 《餐饮店倒闭后…》（60%）', consumed: 257.2, createdAt: DateTime(2026, 9, 2, 10, 5)),
+    // DP7008 = 55 → 清缴单 CL8003（已受理）
+    DebtPointBatch(batchId: 'DP7008', userId: 'U1001', source: DebtPointSource.consumption, faceValue: 55, cashBacked: 11, refId: 'SO9000', title: '消费平债 · 话费+咖啡合并（利润 ¥11 × 5）', consumed: 55, createdAt: DateTime(2026, 9, 5, 12, 0)),
+    // 可用积分
+    DebtPointBatch(batchId: 'DP7009', userId: 'U1001', source: DebtPointSource.content, faceValue: 180, cashBacked: 180, refId: 'C7002-TIP', title: '内容收益 · 《餐饮店倒闭后…》打赏（60%）', createdAt: DateTime(2026, 9, 10, 9, 30)),
+    DebtPointBatch(batchId: 'DP7010', userId: 'U1001', source: DebtPointSource.task, faceValue: 90, cashBacked: 90, refId: 'ST6000', title: '任务结算 · 平台调研问卷（100%）', createdAt: DateTime(2026, 9, 4, 8, 0)),
     DebtPointBatch(batchId: 'DP7003', userId: 'U1001', source: DebtPointSource.consumption, faceValue: 25, cashBacked: 5, refId: 'SO9001', title: '消费平债 · 电影票（利润 ¥5 × 5）', createdAt: DateTime(2026, 9, 6, 19, 40)),
     DebtPointBatch(batchId: 'DP7004', userId: 'U1001', source: DebtPointSource.consumption, faceValue: 30, cashBacked: 6, refId: 'SO9002', title: '消费平债 · 生鲜周卡（利润 ¥6 × 5）', createdAt: DateTime(2026, 9, 9, 8, 12)),
     DebtPointBatch(batchId: 'DP7005', userId: 'U1002', source: DebtPointSource.content, faceValue: 2896, cashBacked: 2896, refId: 'C7001', title: '内容收益 · 《负债 20 万到只剩 5 万》（60%）', consumed: 2896, createdAt: DateTime(2026, 9, 3)),
@@ -278,12 +300,20 @@ class MockDb {
   ];
 
   late final List<ClearanceOrder> clearances = [
-    ClearanceOrder(clearanceId: 'CL8001', userId: 'U1002', caseId: 'DC2005', bankName: '交通银行信用卡中心', points: 2896, cashRemitted: 2896, reductionAccepted: 0, status: ClearanceStatus.done, createdAt: DateTime(2026, 9, 4), history: [
-      ClearanceEvent(10, '用户提交 2,896 DP · 现金背书 100%', DateTime(2026, 9, 4, 10)),
-      ClearanceEvent(20, '银行受理 · 核验 Consent & 积分背书比例', DateTime(2026, 9, 4, 10, 30)),
-      ClearanceEvent(30, '平台存管账户汇出 ¥2,896.00 · TX90010', DateTime(2026, 9, 4, 15)),
-      ClearanceEvent(40, '银行核销债务 ¥2,896.00', DateTime(2026, 9, 5, 9)),
+    ClearanceOrder(clearanceId: 'CL8001', userId: 'U1002', caseId: 'DC2005', bankName: '交通银行信用卡中心', points: 2896, cashRemitted: 2896, reductionAccepted: 0, status: ClearanceStatus.done, bankOperator: '交行·李专员', createdAt: DateTime(2026, 9, 4), history: [
+      ClearanceEvent(10, '用户提交 2,896 DP · 现金背书 100%', DateTime(2026, 9, 4, 10), operator: 'USER:U1002'),
+      ClearanceEvent(20, '银行受理 · 核验 Consent & 积分背书比例', DateTime(2026, 9, 4, 10, 30), operator: 'BANK:李专员'),
+      ClearanceEvent(30, '确认收到平台存管汇款 ¥2,896.00 · TX90010', DateTime(2026, 9, 4, 15), operator: 'BANK:李专员'),
+      ClearanceEvent(40, '核销债务 ¥2,896.00', DateTime(2026, 9, 5, 9), operator: 'BANK:李专员'),
       ClearanceEvent(50, 'Webhook CLEARANCE.COMPLETED', DateTime(2026, 9, 5, 9, 1)),
+    ]),
+    // 招行待受理队列（银行侧演示）
+    ClearanceOrder(clearanceId: 'CL8002', userId: 'U1001', caseId: 'DC2001', bankName: '招商银行信用卡中心', points: 462.4, cashRemitted: 462.4, reductionAccepted: 0, status: ClearanceStatus.submitted, consumedBatches: {'DP7001': 205.2, 'DP7002': 257.2}, createdAt: DateTime(2026, 9, 10, 21, 15), history: [
+      ClearanceEvent(10, '用户提交 462.4 DP · 现金背书 100%（任务+内容）', DateTime(2026, 9, 10, 21, 15), operator: 'USER:U1001'),
+    ]),
+    ClearanceOrder(clearanceId: 'CL8003', userId: 'U1001', caseId: 'DC2001', bankName: '招商银行信用卡中心', points: 55, cashRemitted: 11, reductionAccepted: 44, status: ClearanceStatus.accepted, bankOperator: '顾承业', consumedBatches: {'DP7008': 55}, createdAt: DateTime(2026, 9, 9, 9, 2), history: [
+      ClearanceEvent(10, '用户提交 55 DP · 现金背书 20%（消费平债）', DateTime(2026, 9, 9, 9, 2), operator: 'USER:U1001'),
+      ClearanceEvent(20, '受理 · 资料齐全，等待平台汇款到账', DateTime(2026, 9, 9, 10, 40), operator: 'BANK:顾承业'),
     ]),
   ];
 

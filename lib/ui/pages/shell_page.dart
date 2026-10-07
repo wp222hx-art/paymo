@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../admin/admin_pages.dart';
+import '../bank/bank_pages.dart';
 import '../widgets/common.dart';
 import 'agent_pages.dart';
 import 'community_page.dart';
@@ -20,7 +21,15 @@ class ShellPage extends StatelessWidget {
     final s = context.watch<AppState>();
     final me = s.me;
     final List<(Widget, NavigationDestination)> tabs;
-    if (me.role == UserRole.riskOfficer) {
+    if (me.role == UserRole.bankOfficer) {
+      tabs = [
+        (const BankQueuePage(), const NavigationDestination(icon: Icon(Icons.inbox_outlined), selectedIcon: Icon(Icons.inbox), label: '受理队列')),
+        (const BankCasesPage(), const NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder), label: '本行案件')),
+        (const ApiConsolePage(), const NavigationDestination(icon: Icon(Icons.terminal_outlined), selectedIcon: Icon(Icons.terminal), label: 'API 日志')),
+        (const AgentHubPage(), const NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'AI')),
+        (const ProfilePage(), const NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: '我的')),
+      ];
+    } else if (me.role == UserRole.riskOfficer) {
       tabs = [
         (const RiskDashboardPage(), const NavigationDestination(icon: Icon(Icons.shield_outlined), selectedIcon: Icon(Icons.shield), label: '风控台')),
         (const RiskRulesPage(), const NavigationDestination(icon: Icon(Icons.rule_folder_outlined), selectedIcon: Icon(Icons.rule_folder), label: '规则引擎')),
@@ -232,11 +241,11 @@ void showUserSwitcher(BuildContext context) {
                       Row(children: [
                         Text(u.nickname, style: const TextStyle(fontWeight: FontWeight.w700)),
                         const SizedBox(width: 6),
-                        Tag(u.role.label, color: u.role.isAdmin ? XgColors.violet : XgColors.navy),
+                        Tag(u.role.label, color: u.role.isBank ? XgColors.success : (u.role.isAdmin ? XgColors.violet : XgColors.navy)),
                         if (u.status != UserStatus.normal) ...[const SizedBox(width: 4), Tag(u.status.label, color: XgColors.danger)],
                       ]),
                       const SizedBox(height: 3),
-                      Text('${u.role.desc} · ${KycLevel.name(u.kycLevel)} · ${u.city}', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
+                      Text('${u.orgName ?? u.role.desc} · ${KycLevel.name(u.kycLevel)} · ${u.city}', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
                       const SizedBox(height: 3),
                       Text('权限点 ${u.permissions.length} 个：${u.permissions.take(3).join(', ')}…', style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
                     ],
