@@ -435,7 +435,7 @@ class OffsetShopPage extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Row(children: [Icon(Icons.shopping_bag_outlined, color: Colors.white), SizedBox(width: 8), Text('边消费，边平债', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18))]),
                 const SizedBox(height: 8),
-                const Text('你在平台内的每一笔日常消费，平台分到的利润都会按倍率转化为债务积分并自动计入。利润 ¥5 → 抵债 25 DP，平台真实拿出 ¥5 作为现金背书汇给银行。', style: TextStyle(color: Colors.white, fontSize: 12, height: 1.5)),
+                Text('你在平台内的每一笔日常消费，平台分到的利润都会按倍率转化为债务积分。倍率 = 品类基础 + 信用加成；你当前信用重塑分 ${s.me.creditScore}，履约越好、同样消费抵债越多。', style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.5)),
                 const SizedBox(height: 12),
                 Row(children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${totalOffset.toStringAsFixed(1)} DP', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)), const Text('累计消费平债', style: TextStyle(color: Colors.white70, fontSize: 11))])),
@@ -476,7 +476,9 @@ class _ProductCard extends StatelessWidget {
   const _ProductCard(this.p);
   @override
   Widget build(BuildContext context) {
-    final s = context.read<AppState>();
+    final s = context.watch<AppState>();
+    final q = s.quoteFor(p);
+    final offset = p.platformMargin * q.finalMultiplier;
     return XCard(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       padding: const EdgeInsets.all(14),
@@ -493,23 +495,24 @@ class _ProductCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(gradient: XgColors.sunrise, borderRadius: BorderRadius.circular(6)),
-              child: Text('抵债 ${p.offsetAmount.toStringAsFixed(p.offsetAmount == p.offsetAmount.roundToDouble() ? 0 : 1)} DP', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+              child: Text('抵债 ${offset.toStringAsFixed(offset == offset.roundToDouble() ? 0 : 1)} DP', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
             ),
           ]),
           const SizedBox(height: 4),
-          Text('利润 ¥${p.platformMargin} × ${p.offsetMultiplier} 倍 · 现金背书 ${(p.platformMargin / p.offsetAmount * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
+          Text('利润 ¥${p.platformMargin} × 你的倍率 ${q.finalMultiplier.toStringAsFixed(1)}${q.creditBonus > 0 ? '（含信用加成 +${q.creditBonus.toStringAsFixed(1)}）' : ''} · 背书 ${(p.platformMargin / offset * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
         ])),
         const SizedBox(width: 8),
         FilledButton(
           style: FilledButton.styleFrom(minimumSize: const Size(0, 36), padding: const EdgeInsets.symmetric(horizontal: 14)),
-          onPressed: () => _buy(context, s),
+          onPressed: () => _buy(context, s, q),
           child: const Text('购买', style: TextStyle(fontSize: 13)),
         ),
       ]),
     );
   }
 
-  void _buy(BuildContext context, AppState s) {
+  void _buy(BuildContext context, AppState s, OffsetQuote q) {
+    final offset = p.platformMargin * q.finalMultiplier;
     String channel = 'wallet';
     showXSheet(
       context,
@@ -524,8 +527,10 @@ class _ProductCard extends StatelessWidget {
             KV('商品价格', fmtMoney(p.price), bold: true),
             KV('商家实收', fmtMoney(p.price - p.platformMargin)),
             KV('平台利润', fmtMoney(p.platformMargin)),
-            KV('平债倍率', '× ${p.offsetMultiplier}'),
-            KV('获得债务积分', '${p.offsetAmount.toStringAsFixed(1)} DP', bold: true, vColor: XgColors.coral),
+            KV('平债倍率', '× ${q.finalMultiplier.toStringAsFixed(1)}'),
+            KV('倍率来源', q.explain, vColor: XgColors.textSecondary),
+            KV('命中规则', q.appliedRules.join(' · '), vColor: XgColors.textSecondary),
+            KV('获得债务积分', '${offset.toStringAsFixed(1)} DP', bold: true, vColor: XgColors.coral),
             KV('现金背书', '${fmtMoney(p.platformMargin)}（平台利润全额）', vColor: XgColors.success),
           ]),
         ),
@@ -544,7 +549,7 @@ class _ProductCard extends StatelessWidget {
             showApiResult(ctx, r, successText: '下单成功 · 消费平债 +${r.data?['debt_points_issued']} DP 已计入积分池');
             if (r.ok) Navigator.pop(ctx);
           },
-          child: Text('支付 ${fmtMoney(p.price)} 并获得 ${p.offsetAmount.toStringAsFixed(1)} DP'),
+          child: Text('支付 ${fmtMoney(p.price)} 并获得 ${offset.toStringAsFixed(1)} DP'),
         ),
         const SizedBox(height: 20),
       ])),

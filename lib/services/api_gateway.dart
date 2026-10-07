@@ -775,18 +775,37 @@ class ApiGateway {
   }
 
   // ───── 债务积分池：所有平台价值创造统一汇入 ─────
-  DebtPointBatch _issueDebtPoints(String userId, DebtPointSource src, double face, double cash, String ref, String title) {
-    final batch = DebtPointBatch(batchId: db.nextId('DP'), userId: userId, source: src, faceValue: face, cashBacked: cash, refId: ref, title: title, createdAt: DateTime.now());
+  DebtPointBatch _issueDebtPoints(String userId, DebtPointSource src, double face, double cash, String ref, String title, {String? ruleSnapshot}) {
+    final batch = DebtPointBatch(batchId: db.nextId('DP'), userId: userId, source: src, faceValue: face, cashBacked: cash, refId: ref, title: title, createdAt: DateTime.now(), ruleSnapshot: ruleSnapshot);
     db.debtPoints.insert(0, batch);
     return batch;
   }
 
   double availablePoints(String userId) => db.debtPoints.where((b) => b.userId == userId).fold(0.0, (a, b) => a + b.remaining);
 
+  // ───── 平债倍率规则引擎（运营可配：品类基础 + 信用加成，受全局上限） ─────
+  OffsetQuote quoteOffset(Product sku, UserProfile u) {
+    final live = db.offsetRules.where((r) => r.status == 2 || r.status == 1).toList();
+    final cat = live.where((r) => r.ruleType == 'category' && r.category == sku.category).firstOrNull;
+    final tier = live.where((r) => r.ruleType == 'credit_tier' && u.creditScore >= (r.creditMin ?? 0) && u.creditScore <= (r.creditMax ?? 9999)).firstOrNull;
+    final cap = live.where((r) => r.ruleType == 'global_cap').firstOrNull;
+    final base = cat?.value ?? sku.offsetMultiplier.toDouble();
+    final bonus = tier?.value ?? 0;
+    final capV = cap?.value ?? 99;
+    final fin = min(base + bonus, capV);
+    final applied = [if (cat != null) cat.ruleId, if (tier != null) tier.ruleId, if (cap != null && base + bonus > capV) cap.ruleId];
+    return OffsetQuote(baseMultiplier: base, creditBonus: bonus, cap: capV, finalMultiplier: fin, appliedRules: applied);
+  }
+
   // ───── D07 商城 · 消费平债 ─────
   dynamic _shop(String m, List<String> s, Map<String, dynamic> b) {
     if (s.length == 3 && s[2] == 'products') {
       return {'list': MockDb.products.length, 'offset_rule': '平台利润 × 倍率 = 抵债积分，现金背书 = 平台利润'};
+    }
+    if (s.length == 3 && s[2] == 'quote') {
+      final sku = MockDb.products.firstWhere((p) => p.skuId == b['sku_id'], orElse: () => throw ApiException(40401, '商品不存在'));
+      final q = quoteOffset(sku, me);
+      return {'multiplier': q.finalMultiplier, 'offset_points': sku.platformMargin * q.finalMultiplier, 'rules': q.appliedRules, 'explain': q.explain};
     }
     if (s.length == 3 && s[2] == 'orders' && m == 'POST') {
       final sku = MockDb.products.firstWhere((p) => p.skuId == b['sku_id'], orElse: () => throw ApiException(40401, '商品不存在'));
@@ -795,18 +814,23 @@ class ApiGateway {
         if (me.walletBalance < sku.price) throw ApiException(50301, '余额不足：需 ¥${sku.price}，当前 ¥${me.walletBalance.toStringAsFixed(2)}');
         me.walletBalance -= sku.price;
       }
+      final q = quoteOffset(sku, me);
+      final offset = double.parse((sku.platformMargin * q.finalMultiplier).toStringAsFixed(2));
+      for (final rid in q.appliedRules) {
+        db.offsetRules.firstWhere((r) => r.ruleId == rid).hitCount += 1;
+      }
       final orderId = db.nextId('SO');
-      final batch = _issueDebtPoints(me.userId, DebtPointSource.consumption, sku.offsetAmount, sku.platformMargin, orderId, '消费平债 · ${sku.name}（利润 ¥${sku.platformMargin} × ${sku.offsetMultiplier}）');
-      db.shopOrders.insert(0, ShopOrder(orderId: orderId, userId: me.userId, skuId: sku.skuId, name: sku.name, price: sku.price, platformMargin: sku.platformMargin, offsetAmount: sku.offsetAmount, dpBatchId: batch.batchId, createdAt: DateTime.now()));
+      final batch = _issueDebtPoints(me.userId, DebtPointSource.consumption, offset, sku.platformMargin, orderId, '消费平债 · ${sku.name}（利润 ¥${sku.platformMargin} × ${q.finalMultiplier.toStringAsFixed(1)}）', ruleSnapshot: '${q.explain} · ${q.appliedRules.join(',')}');
+      db.shopOrders.insert(0, ShopOrder(orderId: orderId, userId: me.userId, skuId: sku.skuId, name: sku.name, price: sku.price, platformMargin: sku.platformMargin, offsetAmount: offset, dpBatchId: batch.batchId, createdAt: DateTime.now()));
       // 复式记账：商品款入商家，平台利润转入「债务积分现金备付金」
       _postLedger('consumption_offset', orderId, [
         (channel == 'wallet' ? '用户 ${me.userId} 钱包' : '支付通道待清算 · ${_channelName(channel)}', 'D', sku.price, me.walletBalance),
         ('商家 ${sku.merchant} 应付', 'C', sku.price - sku.platformMargin, 0),
         ('债务积分现金备付金 · ${me.userId}', 'C', sku.platformMargin, 0),
       ]);
-      db.walletTxs.insert(0, WalletTx(txId: orderId, type: 'consumption', title: '消费 · ${sku.name} · 平债 +${sku.offsetAmount} DP', amount: channel == 'wallet' ? -sku.price : 0, createdAt: DateTime.now()));
-      db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'DEBT_POINTS.ISSUED · 消费平债 +${sku.offsetAmount.toStringAsFixed(1)} DP', body: '购买「${sku.name}」平台利润 ¥${sku.platformMargin} × ${sku.offsetMultiplier} 倍，已自动计入债务积分池。可前往「债务积分」转交银行清缴。', at: DateTime.now()));
-      return {'order_id': orderId, 'paid': sku.price, 'platform_margin': sku.platformMargin, 'multiplier': sku.offsetMultiplier, 'debt_points_issued': sku.offsetAmount, 'dp_batch_id': batch.batchId, 'webhook': 'PAYMENT.SUCCESS'};
+      db.walletTxs.insert(0, WalletTx(txId: orderId, type: 'consumption', title: '消费 · ${sku.name} · 平债 +${offset.toStringAsFixed(1)} DP', amount: channel == 'wallet' ? -sku.price : 0, createdAt: DateTime.now()));
+      db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'DEBT_POINTS.ISSUED · 消费平债 +${offset.toStringAsFixed(1)} DP', body: '购买「${sku.name}」平台利润 ¥${sku.platformMargin} × ${q.finalMultiplier.toStringAsFixed(1)} 倍（${q.explain}），已自动计入债务积分池。', at: DateTime.now()));
+      return {'order_id': orderId, 'paid': sku.price, 'platform_margin': sku.platformMargin, 'multiplier': q.finalMultiplier, 'rules': q.appliedRules, 'debt_points_issued': offset, 'dp_batch_id': batch.batchId, 'webhook': 'PAYMENT.SUCCESS'};
     }
     throw ApiException(40401, '资源不存在');
   }
@@ -901,6 +925,79 @@ class ApiGateway {
     }
     if (s.length == 3 && s[2] == 'cases') {
       return {'org': org, 'total': db.debtCases.where((c) => c.creditorName == org).length};
+    }
+    // 批量核销（事务语义：全部校验通过才执行；幂等级别 L4）
+    if (s.length == 4 && s[2] == 'clearances' && s[3] == 'batch-write-off' && m == 'POST') {
+      if (!me.can('bank.clearance.batch_write_off')) throw ApiException(40303, '权限不足：bank.clearance.batch_write_off');
+      final ids = List<String>.from(b['clearance_ids'] ?? []);
+      if (ids.isEmpty) throw ApiException(40001, 'clearance_ids 不能为空');
+      if (ids.length > 50) throw ApiException(40001, '单批最多 50 笔');
+      final acceptReduction = b['accept_reduction'] != false;
+      final targets = <ClearanceOrder>[];
+      for (final id in ids) {
+        final cl = db.clearances.firstWhere((c) => c.clearanceId == id, orElse: () => throw ApiException(40401, '清缴单 $id 不存在'));
+        if (cl.bankName != org) throw ApiException(40303, '$id 不属于本机构，整批回滚');
+        if (cl.status != 30) throw ApiException(40901, '$id 状态为「${ClearanceStatus.label(cl.status)}」，需在「资金划付」才可核销，整批回滚');
+        targets.add(cl);
+      }
+      final batchId = db.nextId('BWO');
+      double total = 0;
+      final results = <Map<String, dynamic>>[];
+      for (final cl in targets) {
+        final c = db.debtCases.firstWhere((c) => c.caseId == cl.caseId);
+        final writeOff = acceptReduction ? cl.points : cl.cashRemitted;
+        cl.status = 40;
+        c.outstanding = max(0, c.outstanding - writeOff);
+        c.cashPaid += cl.cashRemitted;
+        c.pointsCleared += writeOff;
+        cl.history.add(ClearanceEvent(40, '批量核销 $batchId · ¥${writeOff.toStringAsFixed(2)}', DateTime.now(), operator: 'BANK:${me.nickname}'));
+        cl.status = 50;
+        cl.history.add(ClearanceEvent(50, 'Webhook CLEARANCE.COMPLETED', DateTime.now()));
+        final save = _currentUserId;
+        _currentUserId = cl.userId;
+        _bumpRedeem(writeOff);
+        _currentUserId = save;
+        db.users[cl.userId]?.creditScore += 3;
+        total += writeOff;
+        results.add({'clearance_id': cl.clearanceId, 'written_off': writeOff, 'case_outstanding': c.outstanding});
+        db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'CLEARANCE.COMPLETED · $org 已核销 ${writeOff.toStringAsFixed(1)} DP', body: '批量核销 $batchId · 剩余待还 ¥${c.outstanding.toStringAsFixed(2)}', at: DateTime.now()));
+      }
+      return {'batch_id': batchId, 'count': targets.length, 'total_written_off': total, 'results': results, 'audit_log_id': db.nextId('AUD')};
+    }
+    // 日终对账文件
+    if (s.length == 3 && s[2] == 'recon' && m == 'POST') {
+      if (!me.can('bank.recon.generate')) throw ApiException(40303, '权限不足：bank.recon.generate');
+      final today = DateTime.now();
+      final dateStr = '${today.year}${today.month.toString().padLeft(2, '0')}${today.day.toString().padLeft(2, '0')}';
+      if (db.reconFiles.any((f) => f.bankName == org && f.bizDate.year == today.year && f.bizDate.month == today.month && f.bizDate.day == today.day && f.status == 'confirmed')) {
+        throw ApiException(40901, '今日对账文件已确认，不可重复生成');
+      }
+      db.reconFiles.removeWhere((f) => f.bankName == org && f.status == 'generated');
+      // 本行所有已到达「资金划付」及以后的清缴单（排除已对平文件内的）
+      final covered = db.reconFiles.where((f) => f.bankName == org && f.status == 'confirmed').expand((f) => f.lines.map((l) => l.clearanceId)).toSet();
+      final cls = db.clearances.where((c) => c.bankName == org && c.status >= 30 && c.status != 90 && !covered.contains(c.clearanceId)).toList();
+      final lines = <ReconLine>[];
+      for (var i = 0; i < cls.length; i++) {
+        final cl = cls[i];
+        final c = db.debtCases.firstWhere((c) => c.caseId == cl.caseId);
+        // 模拟银行侧实收：绝大多数一致；人为制造 1 笔差错演示（金额尾差）
+        final received = (i == cls.length - 1 && cls.length >= 2) ? cl.cashRemitted - 0.01 : cl.cashRemitted;
+        final written = cl.status >= 40 ? (c.pointsCleared > 0 ? cl.points : 0.0) : 0.0;
+        lines.add(ReconLine(clearanceId: cl.clearanceId, userId: cl.userId, caseNo: c.caseNo, platformRemitted: cl.cashRemitted, bankReceived: received, writtenOff: written, status: cl.status < 40 ? 'pending' : ((cl.cashRemitted - received).abs() > 0.001 ? 'diff' : 'matched'), bankRef: 'UNP$dateStr${(i + 1).toString().padLeft(3, '0')}'));
+      }
+      final file = ReconFile(fileId: db.nextId('RF'), fileName: 'XG_${org.substring(0, 2) == '招商' ? 'CMB' : 'BANK'}_RECON_$dateStr.csv', bankName: org, bizDate: today, lines: lines, generatedAt: DateTime.now(), checksum: 'sha256:${_rand.nextInt(1 << 30).toRadixString(16).padLeft(8, '0')}…${_rand.nextInt(1 << 20).toRadixString(16)}');
+      db.reconFiles.insert(0, file);
+      return {'file_id': file.fileId, 'file_name': file.fileName, 'lines': lines.length, 'matched': lines.where((l) => l.status == 'matched').length, 'diff': file.diffCount, 'pending': lines.where((l) => l.status == 'pending').length, 'total_remitted': file.totalRemitted, 'total_received': file.totalReceived, 'checksum': file.checksum};
+    }
+    if (s.length == 5 && s[2] == 'recon' && s[4] == 'confirm') {
+      if (!me.can('bank.recon.confirm')) throw ApiException(40303, '权限不足：bank.recon.confirm');
+      final f = db.reconFiles.firstWhere((f) => f.fileId == s[3], orElse: () => throw ApiException(40401, '对账文件不存在'));
+      if (f.bankName != org) throw ApiException(40303, '非本机构文件');
+      if (f.status == 'confirmed') throw ApiException(40901, '已确认');
+      if (f.diffCount > 0 && b['force'] != true) throw ApiException(40901, '存在 ${f.diffCount} 笔差错，需处理或 force=true 带差错对平（进入差错处理队列）');
+      f.status = 'confirmed';
+      f.confirmedBy = me.nickname;
+      return {'file_id': f.fileId, 'status': 'confirmed', 'diff_queue': f.diffCount, 'settlement_summary': {'remitted': f.totalRemitted, 'received': f.totalReceived, 'written_off': f.totalWrittenOff}, 'webhook': 'RECON.CONFIRMED'};
     }
     if (s.length == 5 && s[2] == 'clearances') {
       final cl = db.clearances.firstWhere((c) => c.clearanceId == s[3], orElse: () => throw ApiException(40401, '清缴单不存在'));
@@ -1065,6 +1162,35 @@ class ApiGateway {
         c.moderationReason = b['reason'] ?? '人工复审拒绝';
       }
       return {'content_id': c.contentId, 'moderation_status': c.moderationStatus, 'webhook': approve ? null : 'CONTENT.MODERATION.REJECTED'};
+    }
+    // 平债倍率规则（运营）
+    if (sub == 'offset-rules' && m == 'POST') {
+      if (!me.can('ops.offset_rule.write')) throw ApiException(40303, '权限不足：ops.offset_rule.write');
+      final type = b['rule_type'] as String? ?? 'category';
+      final v = (b['value'] as num?)?.toDouble();
+      if (v == null || v < 0 || v > 10) throw ApiException(40001, 'value 需 0~10');
+      final r = OffsetRule(ruleId: db.nextId('OR-'), ruleType: type, name: b['name'] ?? '新规则', category: b['category'], creditMin: (b['credit_min'] as num?)?.toInt(), creditMax: (b['credit_max'] as num?)?.toInt(), value: v, status: 0, createdBy: me.userId);
+      db.offsetRules.insert(0, r);
+      return {'rule_id': r.ruleId, 'status': 0};
+    }
+    if (sub.startsWith('offset-rules/') && s.length >= 4) {
+      final r = db.offsetRules.firstWhere((r) => r.ruleId == s[3], orElse: () => throw ApiException(40401, '规则不存在'));
+      final st = (b['status'] as num?)?.toInt();
+      final v = (b['value'] as num?)?.toDouble();
+      if (v != null) {
+        if (v < 0 || v > 10) throw ApiException(40001, 'value 需 0~10');
+        if (r.ruleType == 'global_cap' && v < 1) throw ApiException(50601, '合规校验：全局上限不得低于 1');
+        r.value = v;
+        if (r.status == 2) r.status = 1; // 生产规则改值自动降为灰度，需重新审批
+      }
+      if (st != null) {
+        if (st == 2) {
+          if (!me.can('ops.offset_rule.publish')) throw ApiException(40303, '发布需 ops.offset_rule.publish 审批流');
+          r.approvedBy = me.nickname;
+        }
+        r.status = st;
+      }
+      return {'rule_id': r.ruleId, 'status': r.status, 'value': r.value, 'audit_log_id': db.nextId('AUD')};
     }
     if (sub == 'dashboard') {
       final totalRepaid = db.users.values.fold<double>(0, (a, u) => a + u.carbonDebtSaved);

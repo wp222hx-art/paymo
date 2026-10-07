@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../admin/admin_pages.dart';
+import '../admin/offset_rules_page.dart';
 import '../bank/bank_pages.dart';
 import '../widgets/common.dart';
 import 'agent_pages.dart';
@@ -41,8 +42,8 @@ class ShellPage extends StatelessWidget {
       tabs = [
         (const OpsDashboardPage(), const NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: '看板')),
         (const ModerationPage(), const NavigationDestination(icon: Icon(Icons.fact_check_outlined), selectedIcon: Icon(Icons.fact_check), label: '内容审核')),
-        (const TaskMarketPage(), const NavigationDestination(icon: Icon(Icons.work_outline), selectedIcon: Icon(Icons.work), label: '任务运营')),
-        (const ApiConsolePage(), const NavigationDestination(icon: Icon(Icons.terminal_outlined), selectedIcon: Icon(Icons.terminal), label: 'API 日志')),
+        (const OffsetRulesPage(), const NavigationDestination(icon: Icon(Icons.tune_outlined), selectedIcon: Icon(Icons.tune), label: '倍率规则')),
+        (const TaskMarketPage(), const NavigationDestination(icon: Icon(Icons.work_outline), selectedIcon: Icon(Icons.work), label: '任务')),
         (const ProfilePage(), const NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: '我的')),
       ];
     } else if (me.role == UserRole.merchant) {

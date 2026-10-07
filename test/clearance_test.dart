@@ -12,7 +12,7 @@ void main() {
     final caseId = r0.data['case_id'] as String;
     final r1 = await api.call('POST', '/v1/shop/orders', body: {'sku_id': 'SKU-MOVIE', 'channel': 'wechat'}, latencyMs: 1);
     expect(r1.code, 0);
-    expect(r1.data['debt_points_issued'], 25.0);
+    expect(r1.data['debt_points_issued'], 27.5); // 5 × (5 + 0.5 信用加成)
     final before = api.availablePoints('U1001');
     await api.call('POST', '/v1/auth/pay-password/verify', body: {'pay_password': '888888'}, latencyMs: 1);
     final r2 = await api.call('POST', '/v1/clearance/submit', body: {'case_id': caseId, 'points': 40.0}, requirePayToken: true, latencyMs: 1);

@@ -120,4 +120,7 @@ class AppState extends ChangeNotifier {
   List<ClearanceOrder> get myClearances => db.clearances.where((c) => c.userId == _userId).toList();
   List<ClearanceCertificate> get myCertificates => db.certificates.where((c) => c.userId == _userId).toList();
   ClearanceCertificate? certOf(String caseId) => db.certificates.where((c) => c.caseId == caseId).firstOrNull;
+  List<OffsetRule> get offsetRules => db.offsetRules;
+  OffsetQuote quoteFor(Product p) => api.quoteOffset(p, me);
+  List<ReconFile> get myBankRecon => db.reconFiles.where((f) => f.bankName == me.orgName).toList();
 }

@@ -112,7 +112,7 @@ class MockDb {
       mbti: 'ENFJ',
       level: 1,
       capabilityTags: ['内容运营', '增长实验', '数据分析'],
-      permissions: ['ops.dashboard.read', 'content.moderation.approve', 'content.moderation.reject', 'task.audit', 'user.search', 'ops.coupon.issue'],
+      permissions: ['ops.dashboard.read', 'content.moderation.approve', 'content.moderation.reject', 'task.audit', 'user.search', 'ops.coupon.issue', 'ops.offset_rule.read', 'ops.offset_rule.write', 'ops.offset_rule.publish'],
       inviteCode: 'XG6M4W2Z',
     ),
     'U1006': UserProfile(
@@ -127,7 +127,7 @@ class MockDb {
       mbti: 'ESTJ',
       level: 1,
       capabilityTags: ['协商还款', '账务核销', '合规审查'],
-      permissions: ['bank.clearance.view', 'bank.clearance.accept', 'bank.clearance.confirm_remit', 'bank.clearance.write_off', 'bank.clearance.reject', 'bank.certificate.issue', 'debt.case.view.tenant'],
+      permissions: ['bank.clearance.view', 'bank.clearance.accept', 'bank.clearance.confirm_remit', 'bank.clearance.write_off', 'bank.clearance.batch_write_off', 'bank.clearance.reject', 'bank.certificate.issue', 'bank.recon.generate', 'bank.recon.confirm', 'debt.case.view.tenant'],
       inviteCode: 'XGBK01CM',
       orgName: '招商银行信用卡中心',
     ),
@@ -318,6 +318,41 @@ class MockDb {
   ];
 
   late final List<ClearanceCertificate> certificates = [];
+
+  // ───── 平债倍率规则（运营可配） ─────
+  late final List<OffsetRule> offsetRules = [
+    OffsetRule(ruleId: 'OR-CAT-001', ruleType: 'category', name: '本地生活 · 基础倍率', category: '本地生活', value: 5, createdBy: 'U1005', approvedBy: 'COO', hitCount: 1240),
+    OffsetRule(ruleId: 'OR-CAT-002', ruleType: 'category', name: '餐饮 · 基础倍率', category: '餐饮', value: 5, createdBy: 'U1005', approvedBy: 'COO', hitCount: 3860),
+    OffsetRule(ruleId: 'OR-CAT-003', ruleType: 'category', name: '美妆 · 基础倍率', category: '美妆', value: 4, createdBy: 'U1005', approvedBy: 'COO', hitCount: 920),
+    OffsetRule(ruleId: 'OR-CAT-004', ruleType: 'category', name: '生活缴费 · 基础倍率', category: '生活缴费', value: 5, createdBy: 'U1005', approvedBy: 'COO', hitCount: 5120),
+    OffsetRule(ruleId: 'OR-CAT-005', ruleType: 'category', name: '教育 · 基础倍率（能力投资）', category: '教育', value: 3, createdBy: 'U1005', approvedBy: 'COO', hitCount: 410),
+    OffsetRule(ruleId: 'OR-CAT-006', ruleType: 'category', name: '生鲜 · 基础倍率（刚需扶持）', category: '生鲜', value: 5, createdBy: 'U1005', approvedBy: 'COO', hitCount: 2210),
+    OffsetRule(ruleId: 'OR-CR-001', ruleType: 'credit_tier', name: '信用重塑 550~599 · 无加成', creditMin: 550, creditMax: 599, value: 0, createdBy: 'U1005', approvedBy: 'COO', hitCount: 800),
+    OffsetRule(ruleId: 'OR-CR-002', ruleType: 'credit_tier', name: '信用重塑 600~649 · +0.5', creditMin: 600, creditMax: 649, value: 0.5, createdBy: 'U1005', approvedBy: 'COO', hitCount: 2300),
+    OffsetRule(ruleId: 'OR-CR-003', ruleType: 'credit_tier', name: '信用重塑 650~699 · +1.0', creditMin: 650, creditMax: 699, value: 1.0, createdBy: 'U1005', approvedBy: 'COO', hitCount: 1650),
+    OffsetRule(ruleId: 'OR-CR-004', ruleType: 'credit_tier', name: '信用重塑 700+ · +1.5', creditMin: 700, creditMax: 999, value: 1.5, createdBy: 'U1005', approvedBy: 'COO', hitCount: 420),
+    OffsetRule(ruleId: 'OR-CAP-001', ruleType: 'global_cap', name: '全局倍率上限（财务风控红线）', value: 6, createdBy: 'U1005', approvedBy: 'CFO', hitCount: 130),
+    OffsetRule(ruleId: 'OR-CAT-007', ruleType: 'category', name: '文娱演出 · 基础倍率（灰度中）', category: '文娱演出', value: 6, status: 1, createdBy: 'U1005', hitCount: 12),
+  ];
+
+  // ───── 日终对账文件 ─────
+  late final List<ReconFile> reconFiles = [
+    ReconFile(
+      fileId: 'RF1001',
+      fileName: 'XG_CMB_RECON_20260910.csv',
+      bankName: '招商银行信用卡中心',
+      bizDate: DateTime(2026, 9, 10),
+      status: 'confirmed',
+      confirmedBy: '顾承业',
+      generatedAt: DateTime(2026, 9, 11, 0, 5),
+      checksum: 'sha256:7f3a…c21e',
+      lines: const [
+        ReconLine(clearanceId: 'CL7990', userId: 'U1001', caseNo: 'CMB-CC-2025-118823', platformRemitted: 1925, bankReceived: 1925, writtenOff: 1925, status: 'matched', bankRef: 'UNP20260910001'),
+        ReconLine(clearanceId: 'CL7991', userId: 'U8810', caseNo: 'CMB-CC-2025-120044', platformRemitted: 320, bankReceived: 320, writtenOff: 1600, status: 'matched', bankRef: 'UNP20260910002'),
+        ReconLine(clearanceId: 'CL7992', userId: 'U8811', caseNo: 'CMB-CC-2025-119870', platformRemitted: 88, bankReceived: 88, writtenOff: 88, status: 'matched', bankRef: 'UNP20260910003'),
+      ],
+    ),
+  ];
 
   late final List<AppNotification> notifications = [
     AppNotification(id: 'N1', category: 'finance', title: 'REPAYMENT.SUCCESS · 第 7 期还款成功', body: '招商银行方案 RP3001 第 7 期 ¥1,925 已到账，剩余 17 期。赎回进度 +1.4%。', at: DateTime(2026, 9, 5, 2, 1)),

@@ -323,6 +323,7 @@ class DebtPointBatch {
   final String title;
   double consumed;
   final DateTime createdAt;
+  final String? ruleSnapshot; // 消费平债：倍率规则快照
 
   DebtPointBatch({
     required this.batchId,
@@ -334,6 +335,7 @@ class DebtPointBatch {
     required this.title,
     this.consumed = 0,
     required this.createdAt,
+    this.ruleSnapshot,
   });
 
   double get remaining => faceValue - consumed;
@@ -450,6 +452,79 @@ class ClearanceOrder {
     required this.createdAt,
   })  : history = history ?? [],
         consumedBatches = consumedBatches ?? {};
+}
+
+/// 平债倍率规则（运营可配）：品类基础倍率 + 信用分加成，受全局上限约束
+class OffsetRule {
+  final String ruleId;
+  final String ruleType; // category / credit_tier / global_cap
+  final String name;
+  final String? category; // ruleType=category
+  final int? creditMin; // ruleType=credit_tier
+  final int? creditMax;
+  double value; // category: 基础倍率; credit_tier: 加成; global_cap: 上限
+  int status; // 0草稿 1灰度 2生产 3关闭
+  final String createdBy;
+  String? approvedBy;
+  int hitCount;
+  OffsetRule({
+    required this.ruleId,
+    required this.ruleType,
+    required this.name,
+    this.category,
+    this.creditMin,
+    this.creditMax,
+    required this.value,
+    this.status = 2,
+    required this.createdBy,
+    this.approvedBy,
+    this.hitCount = 0,
+  });
+  static const statusLabels = ['草稿', '灰度', '生产', '关闭'];
+  String get statusLabel => statusLabels[status];
+}
+
+/// 倍率计算结果（写入积分批次快照）
+class OffsetQuote {
+  final double baseMultiplier;
+  final double creditBonus;
+  final double cap;
+  final double finalMultiplier;
+  final List<String> appliedRules;
+  const OffsetQuote({required this.baseMultiplier, required this.creditBonus, required this.cap, required this.finalMultiplier, required this.appliedRules});
+  String get explain => '品类基础 ×${baseMultiplier.toStringAsFixed(1)} + 信用加成 ×${creditBonus.toStringAsFixed(1)}${finalMultiplier < baseMultiplier + creditBonus ? ' → 触及上限 ×${cap.toStringAsFixed(1)}' : ''}';
+}
+
+/// 日终对账（R-608）
+class ReconLine {
+  final String clearanceId;
+  final String userId;
+  final String caseNo;
+  final double platformRemitted; // 平台汇出
+  final double bankReceived; // 银行实收
+  final double writtenOff; // 核销金额
+  final String status; // matched / diff / pending
+  final String bankRef;
+  const ReconLine({required this.clearanceId, required this.userId, required this.caseNo, required this.platformRemitted, required this.bankReceived, required this.writtenOff, required this.status, required this.bankRef});
+  double get diff => platformRemitted - bankReceived;
+}
+
+class ReconFile {
+  final String fileId;
+  final String fileName;
+  final String bankName;
+  final DateTime bizDate;
+  final List<ReconLine> lines;
+  String status; // generated / confirmed
+  final DateTime generatedAt;
+  String? confirmedBy;
+  final String checksum;
+  ReconFile({required this.fileId, required this.fileName, required this.bankName, required this.bizDate, required this.lines, this.status = 'generated', required this.generatedAt, this.confirmedBy, required this.checksum});
+  double get totalRemitted => lines.fold(0.0, (a, l) => a + l.platformRemitted);
+  double get totalReceived => lines.fold(0.0, (a, l) => a + l.bankReceived);
+  double get totalWrittenOff => lines.fold(0.0, (a, l) => a + l.writtenOff);
+  int get diffCount => lines.where((l) => l.status == 'diff').length;
+  bool get balanced => diffCount == 0;
 }
 
 /// 银行出具的《债务结清证明》
