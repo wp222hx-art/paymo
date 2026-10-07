@@ -10,7 +10,7 @@ class AgentService {
   static final AgentService instance = AgentService._();
 
   static const agents = <AgentDef>[
-    AgentDef(code: 'AG-01', name: '债务规划师', enName: 'DebtPlanner', role: '根据负债画像生成 12/24/36 月还款路径', model: 'GPT-4o', gradientIndex: 0, emoji: '🧭', greeting: '你好，我是你的债务规划师。我已读取你的负债画像，可以随时为你生成停息挂账、分期或一次性结清方案。想从哪一笔债务开始？', quickPrompts: ['帮我规划招行信用卡的还款', '我每月能还多少比较安全？', '一次性结清能打几折？']),
+    AgentDef(code: 'AG-01', name: '债务规划师', enName: 'DebtPlanner', role: '根据负债画像生成还款路径 + 债务积分清缴策略', model: 'GPT-4o', gradientIndex: 0, emoji: '🧭', greeting: '你好，我是你的债务规划师。我已读取你的负债画像与债务积分池。平台有两条平债通道：还款计划（现金直付）和债务积分（转交银行核销）。想从哪一笔债务开始？', quickPrompts: ['帮我规划招行信用卡的还款', '我的债务积分该怎么用？', '消费平债是怎么算的？']),
     AgentDef(code: 'AG-02', name: '赋能教练', enName: 'EmpowerCoach', role: '情绪疏导 + 目标设定 + 每日打卡陪伴', model: 'Claude 3.5 Sonnet', gradientIndex: 1, emoji: '🌱', greeting: '嗨，今天感觉怎么样？不用急着回答"还好"。你已经连续来了 23 天，这本身就是一件很了不起的事。', quickPrompts: ['我今天很焦虑', '帮我定今天的小目标', '我想放弃了']),
     AgentDef(code: 'AG-03', name: '接单助手', enName: 'TaskMatcher', role: '根据能力标签自动匹配任务并生成投递话术', model: 'Qwen-Max', gradientIndex: 2, emoji: '🎯', greeting: '我是接单助手。基于你的价值云能力标签，我已为你筛出匹配度最高的任务。要我生成投递话术吗？', quickPrompts: ['今天有什么适合我的任务？', '帮我写一段投递自荐', '我的能力标签准确吗？']),
     AgentDef(code: 'AG-04', name: '创作助手', enName: 'ContentCreator', role: '生成短视频脚本 / 图文 / 直播话术 / 商品文案', model: 'GPT-4o + 视频模型', gradientIndex: 3, emoji: '✨', greeting: '创作助手就位。告诉我主题，我可以输出 30 秒短视频脚本、小红书图文或直播话术，并自动标注 AI 生成比例。', quickPrompts: ['写一个还债经历短视频脚本', '帮我写护肤品种草文案', '直播开场话术']),
@@ -54,7 +54,7 @@ class AgentService {
   List<String> toolsFor(String agentCode, String input) {
     switch (agentCode) {
       case 'AG-01':
-        return ['query_debt_cases', 'query_debt_profile', 'apr_compliance_check', 'generate_plan'];
+        return ['query_debt_cases', 'query_debt_profile', 'query_debt_points', 'apr_compliance_check', 'generate_plan'];
       case 'AG-02':
         return ['read_emotion_timeline', 'get_checkin_streak'];
       case 'AG-03':
@@ -78,6 +78,26 @@ class AgentService {
     final cases = db.debtCases.where((c) => c.userId == u.userId).toList();
     switch (code) {
       case 'AG-01':
+        if (RegExp(r'积分|DP|清缴|结清').hasMatch(input)) {
+          final pts = db.debtPoints.where((b) => b.userId == u.userId).fold(0.0, (a, b) => a + b.remaining);
+          final cash = db.debtPoints.where((b) => b.userId == u.userId).fold(0.0, (a, b) => a + (b.faceValue == 0 ? 0 : b.cashBacked * (b.remaining / b.faceValue)));
+          final target = cases.where((c) => c.status != 3).toList()..sort((a, b) => a.outstanding.compareTo(b.outstanding));
+          final small = target.firstOrNull;
+          return '【调用工具】query_debt_points ✓ · query_debt_cases ✓\n\n'
+              '🪙 你的债务积分池：${pts.toStringAsFixed(1)} DP，其中现金背书 ¥${_fmt(cash)}（${pts == 0 ? 0 : (cash / pts * 100).toStringAsFixed(0)}%）。\n\n'
+              '积分的本质：平台把真实现金汇给银行，银行按积分面值核销债务。任务/内容/光芒值来源的积分背书 100%；消费平债是平台利润 × 倍率（如¥5 × 5 = 25 DP），差额由银行基于你的履约数据接受为协商减免。\n\n'
+              '💡 策略建议：\n'
+              '① 优先把积分打向**余额最小**的案件${small != null ? '「${small.creditorName}」（待还 ¥${_fmt(small.outstanding)}）' : ''}，尽快拿到第一张《债务结清证明》——心理价值和征信价值都最高；\n'
+              '② 日常开支（话费/生鲜/电影）尽量走平台商城，每月可多沉淀 50~150 DP；\n'
+              '③ 执行中的还款计划继续按月现金直付，两条通道并行，余额归零即触发银行结清单。\n\n'
+              '要我带你去「债务积分」页转交银行吗？';
+        }
+        if (RegExp(r'消费|商城|买|电影|倍率').hasMatch(input)) {
+          return '🛍️ 消费平债的算法很简单：\n\n'
+              '抵债积分 = 平台利润 × 平债倍率\n\n'
+              '例：一张 ¥45 电影票，平台利润 ¥5，倍率 5 → 你获得 25 DP。平台把这 ¥5 全额放入「债务积分现金备付金」，作为汇给银行的现金背书；剩下 20 DP 是银行基于平台数据接受的协商减免。\n\n'
+              '商家不少赚、你不多花、平台让利、银行回款——四方共赢。现在商城里倍率最高的是课程类（利润高），性价比最好的是生鲜周卡（刚需 + 30 DP）。\n\n要去「消费平债」商城看看吗？';
+        }
         if (dp == null || cases.isEmpty) {
           return '我注意到你的账号（${u.role.label}）还没有负债档案。如果你是替他人咨询，可以先在「我的 → 债务档案」手动录入一笔债务，我就能给出具体路径。\n\n通用原则：\n1. 优先处理逾期 > 90 天（M3+）且罚息增长最快的一笔；\n2. 月供总额控制在月收入 45% 以内；\n3. 任何方案都要经 LPR×4 利率合规校验。';
         }
@@ -90,6 +110,7 @@ class AgentService {
             '① 稳健 · 36 期停息挂账：月供 ≈ ¥${_fmt((worst.outstanding - worst.penalty) / 36)}，压力最低；\n'
             '② 进取 · 24 期 + 流量还债 60%：月供 ≈ ¥${_fmt(worst.outstanding / 24)}，配合任务收益可提前 5~7 期；\n'
             '③ 决断 · 一次性结清本金 8 折：需筹 ¥${_fmt(worst.principal * 0.8)}。\n\n'
+            '➕ 别忘了第二条通道：你还有 ${db.debtPoints.where((b) => b.userId == u.userId).fold(0.0, (a, b) => a + b.remaining).toStringAsFixed(0)} DP 债务积分可转交银行核销，建议先清掉余额最小的案件拿到结清证明。\n\n'
             '要我在「债务档案 → ${worst.creditorName}」里正式生成这三套方案供你确认吗？（会调用 API-R-005）';
       case 'AG-02':
         if (RegExp(r'焦虑|难受|失眠|害怕|崩').hasMatch(input)) {

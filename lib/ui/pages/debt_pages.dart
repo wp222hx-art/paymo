@@ -6,6 +6,7 @@ import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
 import 'agent_pages.dart';
+import 'debt_points_pages.dart';
 import 'wallet_pages.dart';
 
 class DebtCenterPage extends StatelessWidget {
@@ -78,6 +79,24 @@ class DebtCenterPage extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(child: OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LedgerPage())), icon: const Icon(Icons.menu_book_outlined, size: 16), label: const Text('复式账本', style: TextStyle(fontSize: 13)))),
             ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: XCard(
+              margin: EdgeInsets.zero,
+              gradient: XgColors.sunrise,
+              padding: const EdgeInsets.all(14),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtPointsPage())),
+              child: Row(children: [
+                const Icon(Icons.token_outlined, color: Colors.white, size: 28),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('${s.myAvailablePoints.toStringAsFixed(1)} DP 可转交银行清缴', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                  const Text('两条平债通道：还款计划（现金直付）+ 债务积分（银行核销）· 余额归零即出具结清证明', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                ])),
+                const Icon(Icons.chevron_right, color: Colors.white),
+              ]),
+            ),
           ),
           const SectionTitle('债务案件 DebtCase · API-R-003'),
           if (cases.isEmpty) const EmptyHint('暂无案件'),
@@ -236,11 +255,31 @@ class DebtCaseDetailPage extends StatelessWidget {
     final plans = s.plansFor(caseId);
     final active = plans.where((p) => p.status == 3 || p.status == 4).firstOrNull;
     final candidates = plans.where((p) => p.status == 1 || p.status == 2).toList();
+    final cert = s.certOf(caseId);
+    final clearances = s.myClearances.where((x) => x.caseId == caseId).toList();
     return Scaffold(
       appBar: AppBar(title: Text(c.creditorName, style: const TextStyle(fontSize: 16))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (cert != null) ...[
+            GestureDetector(
+              onTap: () => showCertificate(context, cert),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFFFFF7E0), Colors.white]), borderRadius: BorderRadius.circular(16), border: Border.all(color: XgColors.gold, width: 1.5)),
+                child: Row(children: [
+                  const Icon(Icons.workspace_premium, color: XgColors.goldDark, size: 36),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('此案件已结清 · 银行已出具结清证明', style: TextStyle(fontWeight: FontWeight.w800, color: XgColors.navyDark)),
+                    Text('${cert.certNo} · 点击查看', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
+                  ])),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           XCard(
             margin: EdgeInsets.zero,
             child: Column(children: [
@@ -252,10 +291,46 @@ class DebtCaseDetailPage extends StatelessWidget {
               KV('导入来源', c.importSource),
               KV('Consent ID', c.consentId),
               KV('协商状态', c.negotiationLabel, vColor: XgColors.navy, bold: true),
-              KV('案件状态', c.statusLabel),
+              KV('案件状态', c.statusLabel, vColor: c.status == 3 ? XgColors.success : null, bold: c.status == 3),
+              const Divider(height: 16),
+              KV('现金直付累计', fmtMoney(c.cashPaid + (active?.paidAmount ?? 0)), vColor: XgColors.success),
+              KV('积分清缴累计', '${c.pointsCleared.toStringAsFixed(1)} DP', vColor: XgColors.coral),
             ]),
           ),
           const SizedBox(height: 12),
+          // 两条平债通道
+          if (c.status != 3)
+            XCard(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('平债通道', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Expanded(child: _channel(Icons.payments_outlined, '现金直付', '还款计划 · 月供自动扣款', XgColors.info)),
+                  const SizedBox(width: 8),
+                  Expanded(child: GestureDetector(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtPointsPage())), child: _channel(Icons.token_outlined, '债务积分', '${s.myAvailablePoints.toStringAsFixed(0)} DP 可转交银行', XgColors.coral))),
+                ]),
+              ]),
+            ),
+          if (c.status != 3) const SizedBox(height: 12),
+          if (clearances.isNotEmpty) ...[
+            XCard(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('银行清缴记录', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 6),
+                ...clearances.map((x) => Padding(padding: const EdgeInsets.symmetric(vertical: 3), child: Row(children: [
+                  Tag(ClearanceStatus.label(x.status), color: x.status == 50 ? XgColors.success : XgColors.warning),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('${x.points.toStringAsFixed(1)} DP · 现金 ${fmtMoney(x.cashRemitted)} · 减免 ${fmtMoney(x.reductionAccepted)}', style: const TextStyle(fontSize: 12))),
+                  Text(fmtDate(x.createdAt), style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
+                ]))),
+              ]),
+            ),
+            const SizedBox(height: 12),
+          ],
           // 还款方案状态机
           XCard(
             margin: EdgeInsets.zero,
@@ -300,6 +375,17 @@ class DebtCaseDetailPage extends StatelessWidget {
       ),
     );
   }
+
+  Widget _channel(IconData i, String t, String d, Color c) => Container(
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(color: c.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: c.withValues(alpha: 0.3))),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(i, color: c, size: 20),
+      const SizedBox(height: 4),
+      Text(t, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: c)),
+      Text(d, style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
+    ]),
+  );
 }
 
 class _PlanCard extends StatelessWidget {

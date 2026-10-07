@@ -109,4 +109,15 @@ class AppState extends ChangeNotifier {
   List<RiskCase> get riskCases => db.riskCases;
   List<RiskRule> get riskRules => db.riskRules;
   List<ApiLog> get apiLogs => db.apiLogs;
+
+  // ───── 债务积分 / 消费平债 / 银行清缴 ─────
+  List<DebtPointBatch> get myDebtPoints => db.debtPoints.where((b) => b.userId == _userId).toList();
+  double get myAvailablePoints => myDebtPoints.fold(0.0, (a, b) => a + b.remaining);
+  double get myCashBacked => myDebtPoints.fold(0.0, (a, b) => a + (b.faceValue == 0 ? 0 : b.cashBacked * (b.remaining / b.faceValue)));
+  double pointsBySource(DebtPointSource s) => myDebtPoints.where((b) => b.source == s).fold(0.0, (a, b) => a + b.faceValue);
+  List<Product> get products => MockDb.products;
+  List<ShopOrder> get myShopOrders => db.shopOrders.where((o) => o.userId == _userId).toList();
+  List<ClearanceOrder> get myClearances => db.clearances.where((c) => c.userId == _userId).toList();
+  List<ClearanceCertificate> get myCertificates => db.certificates.where((c) => c.userId == _userId).toList();
+  ClearanceCertificate? certOf(String caseId) => db.certificates.where((c) => c.caseId == caseId).firstOrNull;
 }

@@ -239,8 +239,9 @@ class OpsDashboardPage extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(children: [
                   _ns('赎回用户', '${db.debtProfiles.length}'),
-                  _ns('执行中方案', '${db.plans.where((p) => p.status == 3).length}'),
-                  _ns('流量还债', fmtMoney(db.settlements.fold(0.0, (a, x) => a + x.repayPart))),
+                  _ns('债务积分发行', '${db.debtPoints.fold(0.0, (a, b) => a + b.faceValue).toStringAsFixed(0)} DP'),
+                  _ns('银行核销', fmtMoney(db.clearances.where((c) => c.status >= 40).fold(0.0, (a, c) => a + c.points))),
+                  _ns('结清证明', '${db.certificates.length} 张'),
                 ]),
               ]),
             ),
@@ -278,6 +279,16 @@ class OpsDashboardPage extends StatelessWidget {
               const KV('首字延迟 P99', '1.21 s（SLO ≤ 1.5 s ✓）', vColor: XgColors.success),
               const KV('满意度分', '+0.72（点赞率 − 点踩率）'),
               KV('API 日志条数', '${db.apiLogs.length}'),
+            ]),
+          ),
+          const SectionTitle('债务积分 · 核心闭环指标'),
+          XCard(
+            child: Column(children: [
+              KV('消费平债订单', '${db.shopOrders.length} 单 · 平台让利 ${fmtMoney(db.shopOrders.fold(0.0, (a, o) => a + o.platformMargin))}'),
+              KV('消费平债积分', '${db.debtPoints.where((b) => b.source == DebtPointSource.consumption).fold(0.0, (a, b) => a + b.faceValue).toStringAsFixed(0)} DP'),
+              KV('现金背书率', '${(db.debtPoints.fold(0.0, (a, b) => a + b.cashBacked) / db.debtPoints.fold(0.01, (a, b) => a + b.faceValue) * 100).toStringAsFixed(1)}%'),
+              KV('清缴单', '${db.clearances.length} 单 · 处理中 ${db.clearances.where((c) => c.status < 50).length}', vColor: XgColors.info),
+              KV('银行接受减免', fmtMoney(db.clearances.where((c) => c.status >= 40).fold(0.0, (a, c) => a + c.reductionAccepted)), vColor: XgColors.coral),
             ]),
           ),
           const SectionTitle('资金 / 合规 · 实时'),

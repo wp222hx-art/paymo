@@ -251,6 +251,44 @@ class MockDb {
     RiskRule(ruleCode: 'AI-INJECT-007', ruleName: 'Prompt 注入检测', scene: 'ai', expression: 'prompt.injection_score > 0.8', riskScore: 70, action: 'warn', status: 1, hitCount24h: 126, fpRate: 0.21),
   ];
 
+  // ───── 债务积分 / 商城 / 清缴 ─────
+  static const products = <Product>[
+    Product(skuId: 'SKU-MOVIE', name: '电影票 · 《黎明之前》2D 单人', category: '本地生活', merchant: '星光影城', price: 45, platformMargin: 5, offsetMultiplier: 5, emoji: '🎬', desc: '平台利润 ¥5 × 5 倍 = 抵债 25 DP'),
+    Product(skuId: 'SKU-COFFEE', name: '生椰拿铁 · 大杯', category: '餐饮', merchant: '瓑幸咖啡', price: 19.9, platformMargin: 2, offsetMultiplier: 5, emoji: '☕', desc: '平台利润 ¥2 × 5 倍 = 抵债 10 DP'),
+    Product(skuId: 'SKU-SERUM', name: '星辰晨露精华 30ml', category: '美妆', merchant: '星辰品牌', price: 129, platformMargin: 18, offsetMultiplier: 4, emoji: '✨', desc: '平台利润 ¥18 × 4 倍 = 抵债 72 DP'),
+    Product(skuId: 'SKU-PHONE', name: '话费充值 100 元', category: '生活缴费', merchant: '中国移动', price: 100, platformMargin: 1.5, offsetMultiplier: 5, emoji: '📱', desc: '平台利润 ¥1.5 × 5 倍 = 抵债 7.5 DP'),
+    Product(skuId: 'SKU-COURSE', name: '《短视频剪辑从 0 到 1》课程', category: '教育', merchant: '橙光教育', price: 199, platformMargin: 60, offsetMultiplier: 3, emoji: '🎓', desc: '平台利润 ¥60 × 3 倍 = 抵债 180 DP · 同时提升能力标签'),
+    Product(skuId: 'SKU-GROCERY', name: '生鲜周卡 · 蜡菜包', category: '生鲜', merchant: '叨叨买菜', price: 88, platformMargin: 6, offsetMultiplier: 5, emoji: '🥬', desc: '平台利润 ¥6 × 5 倍 = 抵债 30 DP'),
+  ];
+
+  late final List<DebtPointBatch> debtPoints = [
+    DebtPointBatch(batchId: 'DP7001', userId: 'U1001', source: DebtPointSource.task, faceValue: 205.2, cashBacked: 205.2, refId: 'ST6001', title: '任务结算 · 星辰晨露精华短视频（60%）', createdAt: DateTime(2026, 9, 8, 14, 22)),
+    DebtPointBatch(batchId: 'DP7002', userId: 'U1001', source: DebtPointSource.content, faceValue: 257.2, cashBacked: 257.2, refId: 'C7002', title: '内容收益 · 《餐饮店倒闭后…》（60%）', createdAt: DateTime(2026, 9, 2, 10, 5)),
+    DebtPointBatch(batchId: 'DP7003', userId: 'U1001', source: DebtPointSource.consumption, faceValue: 25, cashBacked: 5, refId: 'SO9001', title: '消费平债 · 电影票（利润 ¥5 × 5）', createdAt: DateTime(2026, 9, 6, 19, 40)),
+    DebtPointBatch(batchId: 'DP7004', userId: 'U1001', source: DebtPointSource.consumption, faceValue: 30, cashBacked: 6, refId: 'SO9002', title: '消费平债 · 生鲜周卡（利润 ¥6 × 5）', createdAt: DateTime(2026, 9, 9, 8, 12)),
+    DebtPointBatch(batchId: 'DP7005', userId: 'U1002', source: DebtPointSource.content, faceValue: 2896, cashBacked: 2896, refId: 'C7001', title: '内容收益 · 《负债 20 万到只剩 5 万》（60%）', consumed: 2896, createdAt: DateTime(2026, 9, 3)),
+    DebtPointBatch(batchId: 'DP7006', userId: 'U1002', source: DebtPointSource.content, faceValue: 1872, cashBacked: 1872, refId: 'C7003', title: '内容收益 · 《停息挂账怎么谈》（60%）', createdAt: DateTime(2026, 8, 28)),
+    DebtPointBatch(batchId: 'DP7007', userId: 'U1002', source: DebtPointSource.consumption, faceValue: 180, cashBacked: 60, refId: 'SO9003', title: '消费平债 · 剪辑课程（利润 ¥60 × 3）', createdAt: DateTime(2026, 9, 7)),
+  ];
+
+  late final List<ShopOrder> shopOrders = [
+    ShopOrder(orderId: 'SO9001', userId: 'U1001', skuId: 'SKU-MOVIE', name: '电影票 · 《黎明之前》', price: 45, platformMargin: 5, offsetAmount: 25, dpBatchId: 'DP7003', createdAt: DateTime(2026, 9, 6, 19, 40), status: 'fulfilled'),
+    ShopOrder(orderId: 'SO9002', userId: 'U1001', skuId: 'SKU-GROCERY', name: '生鲜周卡 · 蜡菜包', price: 88, platformMargin: 6, offsetAmount: 30, dpBatchId: 'DP7004', createdAt: DateTime(2026, 9, 9, 8, 12)),
+    ShopOrder(orderId: 'SO9003', userId: 'U1002', skuId: 'SKU-COURSE', name: '《短视频剪辑从 0 到 1》', price: 199, platformMargin: 60, offsetAmount: 180, dpBatchId: 'DP7007', createdAt: DateTime(2026, 9, 7), status: 'fulfilled'),
+  ];
+
+  late final List<ClearanceOrder> clearances = [
+    ClearanceOrder(clearanceId: 'CL8001', userId: 'U1002', caseId: 'DC2005', bankName: '交通银行信用卡中心', points: 2896, cashRemitted: 2896, reductionAccepted: 0, status: ClearanceStatus.done, createdAt: DateTime(2026, 9, 4), history: [
+      ClearanceEvent(10, '用户提交 2,896 DP · 现金背书 100%', DateTime(2026, 9, 4, 10)),
+      ClearanceEvent(20, '银行受理 · 核验 Consent & 积分背书比例', DateTime(2026, 9, 4, 10, 30)),
+      ClearanceEvent(30, '平台存管账户汇出 ¥2,896.00 · TX90010', DateTime(2026, 9, 4, 15)),
+      ClearanceEvent(40, '银行核销债务 ¥2,896.00', DateTime(2026, 9, 5, 9)),
+      ClearanceEvent(50, 'Webhook CLEARANCE.COMPLETED', DateTime(2026, 9, 5, 9, 1)),
+    ]),
+  ];
+
+  late final List<ClearanceCertificate> certificates = [];
+
   late final List<AppNotification> notifications = [
     AppNotification(id: 'N1', category: 'finance', title: 'REPAYMENT.SUCCESS · 第 7 期还款成功', body: '招商银行方案 RP3001 第 7 期 ¥1,925 已到账，剩余 17 期。赎回进度 +1.4%。', at: DateTime(2026, 9, 5, 2, 1)),
     AppNotification(id: 'N2', category: 'task', title: 'TASK.ORDER.COMPLETED · 任务已结算', body: '「星辰晨露精华」短视频任务结算 ¥380：¥205.2 划入还债，¥136.8 到账钱包。', at: DateTime(2026, 9, 8, 14, 22)),

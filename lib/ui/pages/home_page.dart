@@ -8,6 +8,7 @@ import '../../state/app_state.dart';
 import '../widgets/common.dart';
 import 'agent_pages.dart';
 import 'debt_pages.dart';
+import 'debt_points_pages.dart';
 import 'shell_page.dart';
 import 'task_pages.dart';
 import 'wallet_pages.dart';
@@ -82,9 +83,32 @@ class HomePage extends StatelessWidget {
               children: [
                 _Quick(icon: Icons.explore_outlined, label: 'AI 规划师', color: XgColors.coral, onTap: () => openAgent(context, 'AG-01')),
                 _Quick(icon: Icons.work_outline, label: '任务市场', color: XgColors.info, onTap: () => s.setTab(2)),
-                _Quick(icon: Icons.account_balance_wallet_outlined, label: '光芒值钱包', color: XgColors.gold, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage()))),
-                _Quick(icon: Icons.cloud_outlined, label: '价值云', color: XgColors.violet, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ValueCloudPage()))),
+                _Quick(icon: Icons.token_outlined, label: '债务积分', color: XgColors.gold, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtPointsPage()))),
+                _Quick(icon: Icons.shopping_bag_outlined, label: '消费平债', color: XgColors.violet, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OffsetShopPage()))),
               ],
+            ),
+          ),
+
+          // ── 债务积分池（核心闭环入口）──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: XCard(
+              margin: EdgeInsets.zero,
+              gradient: XgColors.sunrise,
+              padding: const EdgeInsets.all(14),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtPointsPage())),
+              child: Row(children: [
+                Container(width: 44, height: 44, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.token_outlined, color: Colors.white, size: 26)),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text(s.myAvailablePoints.toStringAsFixed(1), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                    const Padding(padding: EdgeInsets.only(left: 4, bottom: 3), child: Text('DP 可用债务积分', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600))),
+                  ]),
+                  Text('现金背书 ${fmtMoney(s.myCashBacked)} · 任务/内容/消费/光芒值统一汇入 · 转交银行清缴', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                ])),
+                const Icon(Icons.chevron_right, color: Colors.white),
+              ]),
             ),
           ),
 
@@ -128,9 +152,11 @@ class HomePage extends StatelessWidget {
                       Row(children: [const Text('赋能教练', style: TextStyle(fontWeight: FontWeight.w600)), const SizedBox(width: 6), Tag('Claude 3.5', color: XgColors.violet)]),
                       const SizedBox(height: 4),
                       Text(
-                        activeOrders.isNotEmpty
-                            ? '连续打卡 23 天 🌱 今天的小目标：推进「${s.taskOf(activeOrders.first.taskId).title}」，完成后告诉我。'
-                            : '连续打卡 23 天 🌱 今天去任务市场看 1 分钟，不接单也算完成。',
+                        s.myAvailablePoints >= 100
+                            ? '连续打卡 23 天 🌱 你的债务积分已有 ${s.myAvailablePoints.toStringAsFixed(0)} DP，今天的小目标：把它们转交银行清缴，让数字变成真实的进度。'
+                            : activeOrders.isNotEmpty
+                                ? '连续打卡 23 天 🌱 今天的小目标：推进「${s.taskOf(activeOrders.first.taskId).title}」，完成后告诉我。'
+                                : '连续打卡 23 天 🌱 今天去任务市场看 1 分钟，不接单也算完成。',
                         style: const TextStyle(fontSize: 12, color: XgColors.textSecondary),
                       ),
                     ],

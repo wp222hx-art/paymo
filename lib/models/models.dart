@@ -165,6 +165,9 @@ class DebtCase {
   int negotiationStatus; // 0未协商 1协商中 2达成方案 3执行中 4已完成 5失败
   int status; // 1活跃 2冻结 3已了结 4法律程序中
   String? planId;
+  double cashPaid; // 现金直付累计（还款计划）
+  double pointsCleared; // 债务积分清缴累计（银行核销）
+  String? certificateId; // 结清证明
 
   DebtCase({
     required this.caseId,
@@ -182,7 +185,13 @@ class DebtCase {
     this.negotiationStatus = 0,
     this.status = 1,
     this.planId,
+    this.cashPaid = 0,
+    this.pointsCleared = 0,
+    this.certificateId,
   });
+
+  double get originalDebt => principal + interest + penalty;
+  bool get isCleared => status == 3;
 
   String get bucket {
     if (overdueDays <= 0) return 'M0';
@@ -282,6 +291,180 @@ class WalletTx {
     required this.amount,
     required this.createdAt,
     this.status = 'success',
+  });
+}
+
+// ───────────────────────── 债务积分 & 消费平债 & 银行清缴（平台核心闭环） ─────────────────────────
+
+/// 债务积分来源：所有平台价值创造都汇入同一个积分池
+enum DebtPointSource {
+  task('任务结算', '任务奖励中的还债部分，现金背书 100%'),
+  content('内容收益', '流量收益中的还债部分，现金背书 100%'),
+  consumption('消费平债', '平台利润 × 倍率，现金背书 = 平台利润'),
+  lightPoints('光芒值兑换', '100 光芒值 = 1 DP，平台待结算账户背书');
+
+  final String label;
+  final String desc;
+  const DebtPointSource(this.label, this.desc);
+}
+
+/// 债务积分批次：1 DP = ¥1 债务抵扣面值；cash_backed 为平台真实持有的现金
+class DebtPointBatch {
+  final String batchId;
+  final String userId;
+  final DebtPointSource source;
+  final double faceValue;
+  final double cashBacked;
+  final String refId;
+  final String title;
+  double consumed;
+  final DateTime createdAt;
+
+  DebtPointBatch({
+    required this.batchId,
+    required this.userId,
+    required this.source,
+    required this.faceValue,
+    required this.cashBacked,
+    required this.refId,
+    required this.title,
+    this.consumed = 0,
+    required this.createdAt,
+  });
+
+  double get remaining => faceValue - consumed;
+  double get backingRatio => faceValue == 0 ? 0 : cashBacked / faceValue;
+}
+
+/// 商城商品（D07）：每个 SKU 带平台利润与平债倍率
+class Product {
+  final String skuId;
+  final String name;
+  final String category;
+  final String merchant;
+  final double price;
+  final double platformMargin;
+  final int offsetMultiplier;
+  final String emoji;
+  final String desc;
+  const Product({
+    required this.skuId,
+    required this.name,
+    required this.category,
+    required this.merchant,
+    required this.price,
+    required this.platformMargin,
+    required this.offsetMultiplier,
+    required this.emoji,
+    required this.desc,
+  });
+  double get offsetAmount => platformMargin * offsetMultiplier;
+}
+
+class ShopOrder {
+  final String orderId;
+  final String userId;
+  final String skuId;
+  final String name;
+  final double price;
+  final double platformMargin;
+  final double offsetAmount;
+  final String dpBatchId;
+  final DateTime createdAt;
+  final String status; // paid / fulfilled
+  ShopOrder({
+    required this.orderId,
+    required this.userId,
+    required this.skuId,
+    required this.name,
+    required this.price,
+    required this.platformMargin,
+    required this.offsetAmount,
+    required this.dpBatchId,
+    required this.createdAt,
+    this.status = 'paid',
+  });
+}
+
+/// 银行清缴单状态机：10 已提交 → 20 银行受理 → 30 资金划付 → 40 银行核销 → 50 已完成
+class ClearanceStatus {
+  static const submitted = 10;
+  static const accepted = 20;
+  static const remitted = 30;
+  static const written = 40;
+  static const done = 50;
+  static const flow = [10, 20, 30, 40, 50];
+  static String label(int s) => switch (s) {
+    10 => '已提交',
+    20 => '银行受理',
+    30 => '资金划付',
+    40 => '银行核销',
+    50 => '已完成',
+    _ => '未知',
+  };
+}
+
+class ClearanceEvent {
+  final int status;
+  final String note;
+  final DateTime at;
+  ClearanceEvent(this.status, this.note, this.at);
+}
+
+class ClearanceOrder {
+  final String clearanceId;
+  final String userId;
+  final String caseId;
+  final String bankName;
+  final double points;
+  final double cashRemitted;
+  final double reductionAccepted;
+  int status;
+  String? certificateId;
+  final List<ClearanceEvent> history;
+  final DateTime createdAt;
+  ClearanceOrder({
+    required this.clearanceId,
+    required this.userId,
+    required this.caseId,
+    required this.bankName,
+    required this.points,
+    required this.cashRemitted,
+    required this.reductionAccepted,
+    this.status = ClearanceStatus.submitted,
+    this.certificateId,
+    List<ClearanceEvent>? history,
+    required this.createdAt,
+  }) : history = history ?? [];
+}
+
+/// 银行出具的《债务结清证明》
+class ClearanceCertificate {
+  final String certId;
+  final String certNo;
+  final String caseId;
+  final String userId;
+  final String bankName;
+  final String caseNo;
+  final double originalDebt;
+  final double totalCleared;
+  final double cashPaid;
+  final double pointsReduction;
+  final DateTime issuedAt;
+  final String signature;
+  ClearanceCertificate({
+    required this.certId,
+    required this.certNo,
+    required this.caseId,
+    required this.userId,
+    required this.bankName,
+    required this.caseNo,
+    required this.originalDebt,
+    required this.totalCleared,
+    required this.cashPaid,
+    required this.pointsReduction,
+    required this.issuedAt,
+    required this.signature,
   });
 }
 

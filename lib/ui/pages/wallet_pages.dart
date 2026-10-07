@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
+import 'debt_points_pages.dart';
 
 /// 支付密码二次验证 · API-A-016（返回 5 分钟令牌）
 Future<bool> verifyPayPassword(BuildContext context) async {
@@ -81,9 +82,26 @@ class WalletPage extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('${fmtInt(me.lightPoints)} 光芒值', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
-                  const Text('100 光芒值 = ¥1 还债额度 · 不可提现 · 复式记账', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  const Text('100 光芒值 = 1 DP 债务积分 · 不可提现 · 复式记账', style: TextStyle(color: Colors.white70, fontSize: 11)),
                 ])),
-                FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: XgColors.violet, minimumSize: const Size(0, 36)), onPressed: () => _redeem(context), child: const Text('兑换还债')),
+                FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: XgColors.violet, minimumSize: const Size(0, 36)), onPressed: () => _redeem(context), child: const Text('兑换积分')),
+              ]),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: XCard(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(14),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtPointsPage())),
+              child: Row(children: [
+                const Icon(Icons.token_outlined, color: XgColors.goldDark, size: 28),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('${s.myAvailablePoints.toStringAsFixed(1)} DP 债务积分', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  Text('现金背书 ${fmtMoney(s.myCashBacked)} · 转交银行清缴 → 结清证明', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
+                ])),
+                const Icon(Icons.chevron_right, color: XgColors.textSecondary),
               ]),
             ),
           ),
@@ -185,17 +203,17 @@ class WalletPage extends StatelessWidget {
     final ctrl = TextEditingController(text: '1000');
     showXSheet(
       context,
-      title: '光芒值兑换还债额度',
+      title: '光芒值兑换债务积分',
       ListView(shrinkWrap: true, padding: const EdgeInsets.all(16), children: [
         TextField(controller: ctrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: '光芒值（100 的整数倍）', suffixText: '✦')),
         const SizedBox(height: 8),
-        const Text('复式分录示例：平台待结算账户 D 100 / 用户债务本金 C 100。LedgerEntry 只允许 INSERT，错账红字冲销。', style: TextStyle(fontSize: 11, color: XgColors.textSecondary)),
+        const Text('100 光芒值 = 1 DP（现金背书 100%）。复式分录：平台待结算账户 D / 债务积分现金备付金 C。积分进入统一积分池，可转交银行清缴。', style: TextStyle(fontSize: 11, color: XgColors.textSecondary)),
         const SizedBox(height: 16),
         FilledButton(
           onPressed: () async {
             final r = await s.call('POST', '/v1/wallets/light-points/redeem', apiId: 'API-R-008', body: {'points': int.tryParse(ctrl.text) ?? 0});
             if (!context.mounted) return;
-            showApiResult(context, r, successText: '已兑换 ${r.data?['redeemed_points']} 光芒值 → 还债 ${fmtMoney(r.data?['repay_amount'] ?? 0)}');
+            showApiResult(context, r, successText: '已兑换 ${r.data?['redeemed_points']} 光芒值 → +${(r.data?['debt_points_issued'] as num?)?.toStringAsFixed(1)} DP 债务积分');
             if (r.ok) Navigator.pop(context);
           },
           child: const Text('确认兑换'),
@@ -217,6 +235,8 @@ class _TxRow extends StatelessWidget {
       'repay' => Icons.account_balance_outlined,
       'task_income' => Icons.work_outline,
       'content_income' => Icons.play_circle_outline,
+      'consumption' => Icons.shopping_bag_outlined,
+      'debt_points' => Icons.token_outlined,
       _ => Icons.receipt_long_outlined,
     };
     final positive = t.amount >= 0;

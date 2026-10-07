@@ -342,12 +342,12 @@ class OrderDetailPage extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(children: [
                   _sp('总额', st.gross),
-                  _sp('→ 流量还债', st.repayPart),
+                  _sp('→ 债务积分', st.repayPart),
                   _sp('→ 钱包', st.cashPart),
                   _sp('平台费', st.platformFee),
                 ]),
                 const SizedBox(height: 8),
-                const Text('Webhook：TASK.ORDER.COMPLETED · SETTLEMENT.CREATED → 商家', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                Text('还债部分已发行 ${st.repayPart.toStringAsFixed(1)} DP（现金背书 100%），可在「债务积分」转交银行清缴 · Webhook：TASK.ORDER.COMPLETED · DEBT_POINTS.ISSUED', style: const TextStyle(color: Colors.white70, fontSize: 10)),
               ]),
             ),
           if (st != null) const SizedBox(height: 12),
@@ -440,7 +440,7 @@ class _ReviewBox extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('商家验收 · API-T-006', style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
-        Text('通过后立即结算：¥${t.rewardAmount.toStringAsFixed(0)} 从保证金划出，按 ${t.splitPolicy.label} 分账并生成 4 条复式分录。', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
+        Text('通过后立即结算：¥${t.rewardAmount.toStringAsFixed(0)} 从保证金划出，按 ${t.splitPolicy.label} 分账；还债部分发行为接单人的债务积分（现金背书 100%），生成 4 条复式分录。', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
         const SizedBox(height: 10),
         Row(children: [
           Expanded(

@@ -179,6 +179,12 @@ class ApiGateway {
         return _wallets(m, seg, b);
       case 'notifications':
         return _notifications(m, seg, b);
+      case 'shop':
+        return _shop(m, seg, b);
+      case 'debt-points':
+        return _debtPoints(m, seg, b);
+      case 'clearance':
+        return _clearance(m, seg, b);
       case 'admin':
         return _admin(m, seg, b);
       default:
@@ -407,16 +413,16 @@ class ApiGateway {
       p.paidPeriods += 1;
       final c = db.debtCases.firstWhere((c) => c.caseId == p.caseId);
       c.outstanding = max(0, c.outstanding - amt);
+      c.cashPaid += amt;
       _postLedger('repay', '${p.planId}-P${p.paidPeriods}', [
         ('用户 ${me.userId} 钱包', 'D', amt, me.walletBalance),
         ('用户 ${me.userId} 债务本金', 'C', amt, c.outstanding),
       ]);
       db.walletTxs.insert(0, WalletTx(txId: db.nextId('TX'), type: 'repay', title: '还款方案 ${p.planId} 第 ${p.paidPeriods} 期手动还款', amount: -amt, createdAt: DateTime.now()));
       _bumpRedeem(amt);
-      if (p.paidPeriods >= p.periods) {
+      if (p.paidPeriods >= p.periods || c.outstanding <= 0.005) {
         p.status = 4;
-        c.status = 3;
-        c.negotiationStatus = 4;
+        _issueCertificate(c);
       }
       db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'REPAYMENT.SUCCESS · 第 ${p.paidPeriods} 期还款成功', body: '¥${amt.toStringAsFixed(2)} 已划入 ${c.creditorName}，剩余 ${p.periods - p.paidPeriods} 期。', at: DateTime.now()));
       return {'paid_periods': p.paidPeriods, 'outstanding': c.outstanding, 'receipt_id': db.nextId('RCPT'), 'webhook': 'REPAYMENT.SUCCESS'};
@@ -485,17 +491,15 @@ class ApiGateway {
         final pts = (b['points'] as num?)?.toInt() ?? 0;
         if (pts <= 0 || pts % 100 != 0) throw ApiException(40001, '光芒值需为 100 的整数倍');
         if (pts > me.lightPoints) throw ApiException(50301, '光芒值不足');
-        final planId = me.userId == 'U1001' ? 'RP3001' : (me.userId == 'U1002' ? 'RP3002' : null);
         final amt = pts / 100.0;
         me.lightPoints -= pts;
-        final c = planId == null ? null : db.debtCases.firstWhere((c) => c.planId == planId, orElse: () => db.debtCases.first);
-        if (c != null) c.outstanding = max(0, c.outstanding - amt);
-        _postLedger('light_redeem', db.nextId('LR'), [
+        final ref = db.nextId('LR');
+        final dp = _issueDebtPoints(me.userId, DebtPointSource.lightPoints, amt, amt, ref, '光芒值兑换 · $pts ✦ → ${amt.toStringAsFixed(1)} DP');
+        _postLedger('light_redeem', ref, [
           ('平台待结算账户', 'D', amt, 0),
-          ('用户 ${me.userId} 债务本金', 'C', amt, c?.outstanding ?? 0),
+          ('债务积分现金备付金 · ${me.userId}', 'C', amt, 0),
         ]);
-        _bumpRedeem(amt);
-        return {'redeemed_points': pts, 'repay_amount': amt, 'rate': '100 光芒值 = ¥1'};
+        return {'redeemed_points': pts, 'debt_points_issued': amt, 'dp_batch_id': dp.batchId, 'rate': '100 光芒值 = 1 DP = ¥1 抵债'};
     }
     throw ApiException(40401, '资源不存在');
   }
@@ -645,12 +649,10 @@ class ApiGateway {
     if (publisher != null) publisher.walletFrozen = max(0, publisher.walletFrozen - gross);
     worker.walletBalance += cash;
     worker.lightPoints += (gross * 10).round();
-    // 流量还债划入首个执行中的方案
-    final plan = db.plans.where((p) => p.status == 3 && db.debtCases.any((c) => c.caseId == p.caseId && c.userId == worker.userId)).firstOrNull;
-    DebtCase? c;
-    if (plan != null) {
-      c = db.debtCases.firstWhere((c) => c.caseId == plan.caseId);
-      c.outstanding = max(0, c.outstanding - repay);
+    // 流量还债部分 → 发行债务积分（现金背书 100%），由用户选择转交银行清缴
+    DebtPointBatch? dp;
+    if (repay > 0) {
+      dp = _issueDebtPoints(worker.userId, DebtPointSource.task, repay, repay, o.orderId, '任务结算 · ${t.title}（${t.splitPolicy.repayPct}%）');
     }
     final st = Settlement(settlementId: db.nextId('ST'), orderId: o.orderId, userId: worker.userId, gross: gross, cashPart: cash, repayPart: repay, platformFee: fee, createdAt: DateTime.now());
     db.settlements.insert(0, st);
@@ -658,23 +660,18 @@ class ApiGateway {
     _postLedger('commission', o.orderId, [
       ('商家 ${t.publisherId} 保证金账户', 'D', gross, publisher?.walletFrozen ?? 0),
       ('用户 ${worker.userId} 钱包', 'C', cash, worker.walletBalance),
-      ('用户 ${worker.userId} 债务本金', 'C', repay, c?.outstanding ?? 0),
+      ('债务积分现金备付金 · ${worker.userId}', 'C', repay, 0),
       ('平台服务费收入', 'C', fee, 0),
     ]);
     db.walletTxs.insert(0, WalletTx(txId: st.settlementId, type: 'task_income', title: '任务结算 · ${t.title} (提现 ${t.splitPolicy.cashPct}%)', amount: cash, createdAt: DateTime.now()));
     if (repay > 0) {
-      db.walletTxs.insert(0, WalletTx(txId: '${st.settlementId}R', type: 'repay', title: '流量还债 · 自动划入${c != null ? ' ${c.creditorName}' : ''} (${t.splitPolicy.repayPct}%)', amount: -repay, createdAt: DateTime.now()));
+      db.walletTxs.insert(0, WalletTx(txId: '${st.settlementId}R', type: 'debt_points', title: '流量还债 · 转入债务积分 +${repay.toStringAsFixed(1)} DP (${t.splitPolicy.repayPct}%)', amount: 0, createdAt: DateTime.now()));
     }
-    // 更新 worker 赎回
-    final saveUid = _currentUserId;
-    _currentUserId = worker.userId;
-    _bumpRedeem(repay);
-    _currentUserId = saveUid;
     o.status = OrderStatus.settled;
     o.history.add(OrderTransition(from: 60, to: 80, operator: 'SYSTEM', reasonCode: 'SETTLED', evidence: '${st.settlementId} 复式记账 4 分录', at: DateTime.now()));
     if (db.orders.where((x) => x.taskId == t.taskId && x.status < 60).isEmpty && t.currentParticipants >= t.maxParticipants) t.status = 5;
-    db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'task', title: 'TASK.ORDER.COMPLETED · 任务已结算', body: '「${t.title}」结算 ¥${gross.toStringAsFixed(0)}：¥${repay.toStringAsFixed(1)} 划入还债，¥${cash.toStringAsFixed(1)} 到账钱包，+${(gross * 10).round()} 光芒值。', at: DateTime.now()));
-    return {'status': o.status, 'settlement_id': st.settlementId, 'gross': gross, 'cash': cash, 'repay': repay, 'platform_fee': fee, 'webhooks': ['TASK.ORDER.COMPLETED', 'SETTLEMENT.CREATED']};
+    db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'task', title: 'TASK.ORDER.COMPLETED · 任务已结算', body: '「${t.title}」结算 ¥${gross.toStringAsFixed(0)}：+${repay.toStringAsFixed(1)} 债务积分（可转交银行清缴），¥${cash.toStringAsFixed(1)} 到账钱包，+${(gross * 10).round()} 光芒值。', at: DateTime.now()));
+    return {'status': o.status, 'settlement_id': st.settlementId, 'gross': gross, 'cash': cash, 'debt_points_issued': repay, 'dp_batch_id': dp?.batchId, 'platform_fee': fee, 'webhooks': ['TASK.ORDER.COMPLETED', 'SETTLEMENT.CREATED', 'DEBT_POINTS.ISSUED']};
   }
 
   dynamic _settlements(String m, List<String> s, Map<String, dynamic> b) {
@@ -772,6 +769,142 @@ class ApiGateway {
       return {'accepted': true};
     }
     throw ApiException(40401, '资源不存在');
+  }
+
+  // ───── 债务积分池：所有平台价值创造统一汇入 ─────
+  DebtPointBatch _issueDebtPoints(String userId, DebtPointSource src, double face, double cash, String ref, String title) {
+    final batch = DebtPointBatch(batchId: db.nextId('DP'), userId: userId, source: src, faceValue: face, cashBacked: cash, refId: ref, title: title, createdAt: DateTime.now());
+    db.debtPoints.insert(0, batch);
+    return batch;
+  }
+
+  double availablePoints(String userId) => db.debtPoints.where((b) => b.userId == userId).fold(0.0, (a, b) => a + b.remaining);
+
+  // ───── D07 商城 · 消费平债 ─────
+  dynamic _shop(String m, List<String> s, Map<String, dynamic> b) {
+    if (s.length == 3 && s[2] == 'products') {
+      return {'list': MockDb.products.length, 'offset_rule': '平台利润 × 倍率 = 抵债积分，现金背书 = 平台利润'};
+    }
+    if (s.length == 3 && s[2] == 'orders' && m == 'POST') {
+      final sku = MockDb.products.firstWhere((p) => p.skuId == b['sku_id'], orElse: () => throw ApiException(40401, '商品不存在'));
+      final channel = b['channel'] as String? ?? 'wallet';
+      if (channel == 'wallet') {
+        if (me.walletBalance < sku.price) throw ApiException(50301, '余额不足：需 ¥${sku.price}，当前 ¥${me.walletBalance.toStringAsFixed(2)}');
+        me.walletBalance -= sku.price;
+      }
+      final orderId = db.nextId('SO');
+      final batch = _issueDebtPoints(me.userId, DebtPointSource.consumption, sku.offsetAmount, sku.platformMargin, orderId, '消费平债 · ${sku.name}（利润 ¥${sku.platformMargin} × ${sku.offsetMultiplier}）');
+      db.shopOrders.insert(0, ShopOrder(orderId: orderId, userId: me.userId, skuId: sku.skuId, name: sku.name, price: sku.price, platformMargin: sku.platformMargin, offsetAmount: sku.offsetAmount, dpBatchId: batch.batchId, createdAt: DateTime.now()));
+      // 复式记账：商品款入商家，平台利润转入「债务积分现金备付金」
+      _postLedger('consumption_offset', orderId, [
+        (channel == 'wallet' ? '用户 ${me.userId} 钱包' : '支付通道待清算 · ${_channelName(channel)}', 'D', sku.price, me.walletBalance),
+        ('商家 ${sku.merchant} 应付', 'C', sku.price - sku.platformMargin, 0),
+        ('债务积分现金备付金 · ${me.userId}', 'C', sku.platformMargin, 0),
+      ]);
+      db.walletTxs.insert(0, WalletTx(txId: orderId, type: 'consumption', title: '消费 · ${sku.name} · 平债 +${sku.offsetAmount} DP', amount: channel == 'wallet' ? -sku.price : 0, createdAt: DateTime.now()));
+      db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'DEBT_POINTS.ISSUED · 消费平债 +${sku.offsetAmount.toStringAsFixed(1)} DP', body: '购买「${sku.name}」平台利润 ¥${sku.platformMargin} × ${sku.offsetMultiplier} 倍，已自动计入债务积分池。可前往「债务积分」转交银行清缴。', at: DateTime.now()));
+      return {'order_id': orderId, 'paid': sku.price, 'platform_margin': sku.platformMargin, 'multiplier': sku.offsetMultiplier, 'debt_points_issued': sku.offsetAmount, 'dp_batch_id': batch.batchId, 'webhook': 'PAYMENT.SUCCESS'};
+    }
+    throw ApiException(40401, '资源不存在');
+  }
+
+  // ───── 债务积分账户 ─────
+  dynamic _debtPoints(String m, List<String> s, Map<String, dynamic> b) {
+    final mine = db.debtPoints.where((x) => x.userId == me.userId).toList();
+    final face = mine.fold(0.0, (a, x) => a + x.remaining);
+    final cash = mine.fold(0.0, (a, x) => a + (x.remaining == 0 ? 0 : x.cashBacked * (x.remaining / x.faceValue)));
+    return {'available_points': face, 'cash_backed': cash, 'backing_ratio': face == 0 ? 0 : cash / face, 'batches': mine.length};
+  }
+
+  // ───── 银行清缴：积分转交 → 银行核销 → 结清单 ─────
+  dynamic _clearance(String m, List<String> s, Map<String, dynamic> b) {
+    if (s.length == 3 && s[2] == 'submit' && m == 'POST') {
+      final c = db.debtCases.firstWhere((c) => c.caseId == b['case_id'], orElse: () => throw ApiException(40401, '案件不存在'));
+      if (c.userId != me.userId) throw ApiException(40303, '非本人案件');
+      if (c.status == 3) throw ApiException(40901, '案件已结清');
+      if (db.clearances.any((x) => x.caseId == c.caseId && x.status < ClearanceStatus.done)) throw ApiException(40901, '该案件已有清缴单在处理中');
+      final avail = availablePoints(me.userId);
+      var pts = (b['points'] as num?)?.toDouble() ?? avail;
+      if (pts <= 0) throw ApiException(40001, 'points 必须 > 0');
+      if (pts > avail) throw ApiException(50301, '债务积分不足：可用 ${avail.toStringAsFixed(1)} DP');
+      pts = min(pts, c.outstanding);
+      // FIFO 消耗批次，按比例计算现金背书
+      double need = pts, cash = 0;
+      for (final batch in db.debtPoints.where((x) => x.userId == me.userId && x.remaining > 0).toList().reversed) {
+        if (need <= 0) break;
+        final use = min(need, batch.remaining);
+        cash += batch.cashBacked * (use / batch.faceValue);
+        batch.consumed += use;
+        need -= use;
+      }
+      final reduction = pts - cash;
+      final cl = ClearanceOrder(clearanceId: db.nextId('CL'), userId: me.userId, caseId: c.caseId, bankName: c.creditorName, points: pts, cashRemitted: cash, reductionAccepted: reduction, createdAt: DateTime.now());
+      cl.history.add(ClearanceEvent(10, '用户提交 ${pts.toStringAsFixed(1)} DP · 现金背书 ${(cash / pts * 100).toStringAsFixed(0)}%', DateTime.now()));
+      db.clearances.insert(0, cl);
+      _postLedger('clearance_remit', cl.clearanceId, [
+        ('债务积分现金备付金 · ${me.userId}', 'D', cash, 0),
+        ('银行清缴在途 · ${c.creditorName}', 'C', cash, 0),
+      ]);
+      _runBankClearance(cl, c);
+      return {'clearance_id': cl.clearanceId, 'points': pts, 'cash_remitted': cash, 'reduction_requested': reduction, 'status': cl.status, 'webhook': 'CLEARANCE.SUBMITTED'};
+    }
+    throw ApiException(40401, '资源不存在');
+  }
+
+  /// 模拟银行侧异步处理（Webhook 回调）
+  void _runBankClearance(ClearanceOrder cl, DebtCase c) {
+    final uid = cl.userId;
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      cl.status = 20;
+      cl.history.add(ClearanceEvent(20, '银行受理 · 核验 Consent ${c.consentId} & 积分背书比例', DateTime.now()));
+    });
+    Future.delayed(const Duration(milliseconds: 3000), () {
+      cl.status = 30;
+      cl.history.add(ClearanceEvent(30, '平台存管账户汇出 ¥${cl.cashRemitted.toStringAsFixed(2)} · 银联代付', DateTime.now()));
+    });
+    Future.delayed(const Duration(milliseconds: 4500), () {
+      cl.status = 40;
+      c.outstanding = max(0, c.outstanding - cl.points);
+      c.cashPaid += cl.cashRemitted;
+      c.pointsCleared += cl.points;
+      cl.history.add(ClearanceEvent(40, '银行核销债务 ¥${cl.points.toStringAsFixed(2)}（现金 ¥${cl.cashRemitted.toStringAsFixed(2)} + 协商减免 ¥${cl.reductionAccepted.toStringAsFixed(2)}）', DateTime.now()));
+      final u = db.users[uid]!;
+      final save = _currentUserId;
+      _currentUserId = uid;
+      _bumpRedeem(cl.points);
+      _currentUserId = save;
+      u.creditScore += 3;
+    });
+    Future.delayed(const Duration(milliseconds: 6000), () {
+      cl.status = 50;
+      cl.history.add(ClearanceEvent(50, 'Webhook CLEARANCE.COMPLETED', DateTime.now()));
+      db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'CLEARANCE.COMPLETED · 银行已核销 ${cl.points.toStringAsFixed(1)} DP', body: '${c.creditorName} 已核销债务 ¥${cl.points.toStringAsFixed(2)}，剩余待还 ¥${c.outstanding.toStringAsFixed(2)}。', at: DateTime.now()));
+      if (c.outstanding <= 0.005) _issueCertificate(c);
+    });
+  }
+
+  void _issueCertificate(DebtCase c) {
+    c.status = 3;
+    c.negotiationStatus = 4;
+    final plan = db.plans.where((p) => p.planId == c.planId).firstOrNull;
+    if (plan != null && plan.status == 3) plan.status = 4;
+    final cert = ClearanceCertificate(
+      certId: db.nextId('CERT'),
+      certNo: 'XG-${c.creditorName.hashCode.abs() % 900 + 100}-${DateTime.now().year}-${db.nextId('').padLeft(6, '0')}',
+      caseId: c.caseId,
+      userId: c.userId,
+      bankName: c.creditorName,
+      caseNo: c.caseNo,
+      originalDebt: c.originalDebt,
+      totalCleared: c.originalDebt,
+      cashPaid: c.cashPaid + (plan?.paidAmount ?? 0),
+      pointsReduction: c.originalDebt - c.cashPaid - (plan?.paidAmount ?? 0),
+      issuedAt: DateTime.now(),
+      signature: 'SM2:${_rand.nextInt(1 << 30).toRadixString(16).padLeft(8, '0')}…${_rand.nextInt(1 << 30).toRadixString(16)}',
+    );
+    db.certificates.insert(0, cert);
+    c.certificateId = cert.certId;
+    db.notifications.insert(0, AppNotification(id: db.nextId('N'), category: 'finance', title: 'CERTIFICATE.ISSUED · 《债务结清证明》已出具', body: '${c.creditorName} 已对案件 ${c.caseNo} 出具结清证明 ${cert.certNo}。正式上岸！✨', at: DateTime.now()));
   }
 
   // ───── 通知 ─────

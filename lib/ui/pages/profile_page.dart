@@ -8,6 +8,7 @@ import '../admin/admin_pages.dart';
 import '../widgets/common.dart';
 import 'community_page.dart';
 import 'debt_pages.dart';
+import 'debt_points_pages.dart';
 import 'home_page.dart';
 import 'shell_page.dart';
 import 'wallet_pages.dart';
@@ -79,6 +80,8 @@ class ProfilePage extends StatelessWidget {
             child: Column(children: [
               if (!me.role.isAdmin) ...[
                 _item(context, Icons.account_balance_outlined, '债务中心 · 负债画像 / 还款方案', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtCenterPage()))),
+                _item(context, Icons.token_outlined, '债务积分 · 银行清缴 / 结清证明（${s.myAvailablePoints.toStringAsFixed(0)} DP）', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtPointsPage()))),
+                _item(context, Icons.shopping_bag_outlined, '消费平债商城 · 利润 × 倍率抵债', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OffsetShopPage()))),
                 _item(context, Icons.account_balance_wallet_outlined, '钱包 · 充值 / 提现 / 光芒值', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage()))),
                 _item(context, Icons.cloud_outlined, 'AI 价值云 · 能力标签 / 成长体系', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ValueCloudPage()))),
                 _item(context, Icons.article_outlined, '我的内容（${s.myContents.length}）', () => _myContents(context)),
