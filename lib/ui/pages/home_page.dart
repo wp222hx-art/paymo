@@ -6,6 +6,8 @@ import '../../models/models.dart';
 import '../../services/agent_service.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
+import '../../core/module_info.dart';
+import '../widgets/module_widgets.dart';
 import 'agent_pages.dart';
 import 'debt_pages.dart';
 import 'debt_points_pages.dart';
@@ -24,10 +26,11 @@ class HomePage extends StatelessWidget {
     final plans = s.myActivePlans;
     final activeOrders = s.myOrders.where((o) => o.status < 60).toList();
     return Scaffold(
-      appBar: const XgAppBar(),
+      appBar: const XgAppBar(info: Modules.home),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
+          const ModuleBanner(Modules.home),
           // ── 赎回进度 Hero ──
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -372,7 +375,7 @@ class MerchantHomePage extends StatelessWidget {
     final pendingReview = s.db.orders.where((o) => tasks.any((t) => t.taskId == o.taskId) && o.status == OrderStatus.awaitingReview).toList();
     final disputes = s.db.orders.where((o) => tasks.any((t) => t.taskId == o.taskId) && o.status == OrderStatus.dispute).toList();
     return Scaffold(
-      appBar: const XgAppBar(),
+      appBar: const XgAppBar(info: Modules.tasks),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 24),
         children: [

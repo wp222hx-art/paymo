@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme.dart';
 import '../../models/models.dart';
+import '../../services/mock_db.dart';
 import '../../state/app_state.dart';
+import '../../core/module_info.dart';
 import '../widgets/common.dart';
+import '../widgets/module_widgets.dart';
 import 'wallet_pages.dart';
 
 Color sourceColor(DebtPointSource s) => switch (s) {
@@ -57,6 +60,7 @@ class _DebtPointsPageState extends State<DebtPointsPage> {
     final openCases = s.myCases.where((c) => c.status != 3).toList();
     return Scaffold(
       appBar: AppBar(title: const Text('债务积分 · 银行清缴'), actions: [
+        const InfoButton(Modules.debtPoints),
         IconButton(icon: const Icon(Icons.storefront_outlined), tooltip: '消费平债商城', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OffsetShopPage()))),
       ]),
       body: ListView(
@@ -413,40 +417,140 @@ void showCertificate(BuildContext context, ClearanceCertificate c) {
   );
 }
 
-// ───────────────────────── 消费平债商城 ─────────────────────────
+// ───────────────────────── 本地生活 · 消费平债 ─────────────────────────
 
-class OffsetShopPage extends StatelessWidget {
+class OffsetShopPage extends StatefulWidget {
   const OffsetShopPage({super.key});
+  @override
+  State<OffsetShopPage> createState() => _OffsetShopPageState();
+}
+
+class _OffsetShopPageState extends State<OffsetShopPage> {
+  String? _cat;
+
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final orders = s.myShopOrders;
     final totalOffset = orders.fold(0.0, (a, o) => a + o.offsetAmount);
+    final monthly = s.myMonthlyRepayment;
+    final all = s.products;
+    final list = _cat == null ? all : all.where((p) => p.category == _cat).toList();
+    // 热门：按抵债 DP 最高
+    final hot = [...all]..sort((a, b) => (b.platformMargin * s.quoteFor(b).finalMultiplier).compareTo(a.platformMargin * s.quoteFor(a).finalMultiplier));
+    final days = monthly <= 0 ? 0.0 : totalOffset / (monthly / 30);
     return Scaffold(
-      appBar: AppBar(title: const Text('消费平债商城 · D07')),
+      appBar: AppBar(title: const Text('本地生活 · 消费平债'), actions: const [InfoButton(Modules.shop)]),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
+          const ModuleBanner(Modules.shop),
+          // Hero
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: XCard(
               margin: EdgeInsets.zero,
               gradient: XgColors.sunrise,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Row(children: [Icon(Icons.shopping_bag_outlined, color: Colors.white), SizedBox(width: 8), Text('边消费，边平债', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18))]),
-                const SizedBox(height: 8),
-                Text('你在平台内的每一笔日常消费，平台分到的利润都会按倍率转化为债务积分。倍率 = 品类基础 + 信用加成；你当前信用重塑分 ${s.me.creditScore}，履约越好、同样消费抵债越多。', style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.5)),
-                const SizedBox(height: 12),
-                Row(children: [
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${totalOffset.toStringAsFixed(1)} DP', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)), const Text('累计消费平债', style: TextStyle(color: Colors.white70, fontSize: 11))])),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${orders.length} 单', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)), const Text('消费订单', style: TextStyle(color: Colors.white70, fontSize: 11))])),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(fmtMoney(s.me.walletBalance), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)), const Text('钱包余额', style: TextStyle(color: Colors.white70, fontSize: 11))])),
-                ]),
+                const Row(children: [Icon(Icons.wb_sunny_outlined, color: Colors.white), SizedBox(width: 8), Text('边消费，边平债', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20))]),
+                const SizedBox(height: 6),
+                Text('该花的钱照花。平台分到的利润按倍率变成你的债务积分。你的信用重塑分 ${s.me.creditScore}，当前享受 ${s.quoteFor(all.first).creditBonus > 0 ? '+${s.quoteFor(all.first).creditBonus.toStringAsFixed(1)} 信用加成' : '基础倍率'}。', style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.5)),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(12)),
+                  child: Row(children: [
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('${totalOffset.toStringAsFixed(1)} DP', style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800)),
+                      const Text('累计消费平债', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    ])),
+                    Container(width: 1, height: 36, color: Colors.white30),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(days >= 0.1 ? '≈ ${days.toStringAsFixed(1)} 天' : '—', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                      const Text('相当于少还的天数', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    ])),
+                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      Text('${orders.length}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                      const Text('订单', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    ]),
+                  ]),
+                ),
               ]),
             ),
           ),
-          const SectionTitle('商品 · 每件标注利润与平债倍率'),
-          ...s.products.map((p) => _ProductCard(p)),
+
+          // 分类宫格
+          const SectionTitle('服务分类 · 8 大本地生活场景'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: GridView.count(
+              crossAxisCount: 4,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 0.95,
+              children: MockDb.shopCategories.map((c) {
+                final sel = _cat == c.$1;
+                final n = all.where((p) => p.category == c.$1).length;
+                return GestureDetector(
+                  onTap: () => setState(() => _cat = sel ? null : c.$1),
+                  child: Container(
+                    decoration: BoxDecoration(color: sel ? XgColors.navy : Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: sel ? XgColors.navy : XgColors.divider)),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Text(c.$2, style: const TextStyle(fontSize: 24)),
+                      const SizedBox(height: 4),
+                      Text(c.$1, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white : XgColors.textPrimary)),
+                      Text('$n 项', style: TextStyle(fontSize: 9, color: sel ? Colors.white70 : XgColors.textSecondary)),
+                    ]),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+
+          // 高抵债精选
+          if (_cat == null) ...[
+            const SectionTitle('高抵债精选 · 同样花钱，抵得更多'),
+            SizedBox(
+              height: 150,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: 6,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (_, i) {
+                  final p = hot[i];
+                  final q = s.quoteFor(p);
+                  final dp = p.platformMargin * q.finalMultiplier;
+                  return GestureDetector(
+                    onTap: () => _buy(context, s, p, q),
+                    child: Container(
+                      width: 150,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: XgColors.divider)),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [Text(p.emoji, style: const TextStyle(fontSize: 26)), const Spacer(), DebtImpactBadge(dp: dp, monthlyRepayment: monthly, compact: true)]),
+                        const SizedBox(height: 8),
+                        Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, height: 1.3)),
+                        const Spacer(),
+                        Row(children: [
+                          Text(fmtMoney(p.price), style: const TextStyle(fontWeight: FontWeight.w800, color: XgColors.navy)),
+                          const Spacer(),
+                          Text('抵 ${(dp / p.price * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 10, color: XgColors.coral, fontWeight: FontWeight.w700)),
+                        ]),
+                      ]),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+
+          SectionTitle(_cat == null ? '全部服务（${list.length}）' : '$_cat（${list.length}）', action: _cat == null ? null : '清除筛选', onAction: () => setState(() => _cat = null)),
+          ...list.map((p) => _ProductCard(p, monthly: monthly, onBuy: (q) => _buy(context, s, p, q))),
+
           if (orders.isNotEmpty) ...[
             const SectionTitle('我的消费订单'),
             ...orders.map((o) => Container(
@@ -469,69 +573,37 @@ class OffsetShopPage extends StatelessWidget {
       ),
     );
   }
-}
 
-class _ProductCard extends StatelessWidget {
-  final Product p;
-  const _ProductCard(this.p);
-  @override
-  Widget build(BuildContext context) {
-    final s = context.watch<AppState>();
-    final q = s.quoteFor(p);
+  void _buy(BuildContext context, AppState s, Product p, OffsetQuote q) {
     final offset = p.platformMargin * q.finalMultiplier;
-    return XCard(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      padding: const EdgeInsets.all(14),
-      child: Row(children: [
-        Container(width: 56, height: 56, decoration: BoxDecoration(color: XgColors.bg, borderRadius: BorderRadius.circular(14)), alignment: Alignment.center, child: Text(p.emoji, style: const TextStyle(fontSize: 28))),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-          Text('${p.merchant} · ${p.category}', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
-          const SizedBox(height: 6),
-          Row(children: [
-            Text(fmtMoney(p.price), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: XgColors.navy)),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(gradient: XgColors.sunrise, borderRadius: BorderRadius.circular(6)),
-              child: Text('抵债 ${offset.toStringAsFixed(offset == offset.roundToDouble() ? 0 : 1)} DP', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
-            ),
-          ]),
-          const SizedBox(height: 4),
-          Text('利润 ¥${p.platformMargin} × 你的倍率 ${q.finalMultiplier.toStringAsFixed(1)}${q.creditBonus > 0 ? '（含信用加成 +${q.creditBonus.toStringAsFixed(1)}）' : ''} · 背书 ${(p.platformMargin / offset * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
-        ])),
-        const SizedBox(width: 8),
-        FilledButton(
-          style: FilledButton.styleFrom(minimumSize: const Size(0, 36), padding: const EdgeInsets.symmetric(horizontal: 14)),
-          onPressed: () => _buy(context, s, q),
-          child: const Text('购买', style: TextStyle(fontSize: 13)),
-        ),
-      ]),
-    );
-  }
-
-  void _buy(BuildContext context, AppState s, OffsetQuote q) {
-    final offset = p.platformMargin * q.finalMultiplier;
+    final monthly = s.myMonthlyRepayment;
     String channel = 'wallet';
     showXSheet(
       context,
-      title: '确认下单 · API-S-006 / S-007',
+      title: '确认下单',
       StatefulBuilder(builder: (ctx, setSt) => ListView(shrinkWrap: true, padding: const EdgeInsets.all(16), children: [
-        Row(children: [Text(p.emoji, style: const TextStyle(fontSize: 32)), const SizedBox(width: 10), Expanded(child: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)))]),
-        const SizedBox(height: 12),
+        Row(children: [
+          Container(width: 56, height: 56, decoration: BoxDecoration(color: XgColors.bg, borderRadius: BorderRadius.circular(14)), alignment: Alignment.center, child: Text(p.emoji, style: const TextStyle(fontSize: 30))),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            Text('${p.merchant} · ${p.desc}', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary)),
+          ])),
+        ]),
+        const SizedBox(height: 14),
+        Center(child: DebtImpactBadge(dp: offset, monthlyRepayment: monthly)),
+        const SizedBox(height: 14),
         XCard(
           margin: EdgeInsets.zero,
           padding: const EdgeInsets.all(12),
           child: Column(children: [
             KV('商品价格', fmtMoney(p.price), bold: true),
             KV('商家实收', fmtMoney(p.price - p.platformMargin)),
-            KV('平台利润', fmtMoney(p.platformMargin)),
-            KV('平债倍率', '× ${q.finalMultiplier.toStringAsFixed(1)}'),
-            KV('倍率来源', q.explain, vColor: XgColors.textSecondary),
+            KV('平台利润（让利）', fmtMoney(p.platformMargin), vColor: XgColors.success),
+            KV('你的倍率', '× ${q.finalMultiplier.toStringAsFixed(1)}  ·  ${q.explain}'),
             KV('命中规则', q.appliedRules.join(' · '), vColor: XgColors.textSecondary),
             KV('获得债务积分', '${offset.toStringAsFixed(1)} DP', bold: true, vColor: XgColors.coral),
-            KV('现金背书', '${fmtMoney(p.platformMargin)}（平台利润全额）', vColor: XgColors.success),
+            KV('现金背书', '${fmtMoney(p.platformMargin)}（${(p.platformMargin / offset * 100).toStringAsFixed(0)}%）'),
           ]),
         ),
         const SizedBox(height: 12),
@@ -546,13 +618,110 @@ class _ProductCard extends StatelessWidget {
           onPressed: () async {
             final r = await s.call('POST', '/v1/shop/orders', apiId: 'API-S-006', kycRequired: 1, requestId: 'so-${p.skuId}-${DateTime.now().millisecondsSinceEpoch}', body: {'sku_id': p.skuId, 'channel': channel});
             if (!ctx.mounted) return;
-            showApiResult(ctx, r, successText: '下单成功 · 消费平债 +${r.data?['debt_points_issued']} DP 已计入积分池');
-            if (r.ok) Navigator.pop(ctx);
+            if (!r.ok) {
+              showApiResult(ctx, r);
+              return;
+            }
+            Navigator.pop(ctx);
+            if (context.mounted) _celebrate(context, s, p, (r.data['debt_points_issued'] as num).toDouble());
           },
-          child: Text('支付 ${fmtMoney(p.price)} 并获得 ${offset.toStringAsFixed(1)} DP'),
+          child: Text('支付 ${fmtMoney(p.price)} · 抵债 ${offset.toStringAsFixed(1)} DP'),
         ),
         const SizedBox(height: 20),
       ])),
+    );
+  }
+
+  /// 下单成功 · 正向反馈
+  void _celebrate(BuildContext context, AppState s, Product p, double dp) {
+    final monthly = s.myMonthlyRepayment;
+    final days = monthly <= 0 ? 0.0 : dp / (monthly / 30);
+    final avail = s.myAvailablePoints;
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(gradient: XgColors.sunrise, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: XgColors.violet.withValues(alpha: 0.4), blurRadius: 30, offset: const Offset(0, 12))]),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('🌅', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 8),
+            const Text('这笔消费，也在还债', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text('${p.emoji} ${p.name}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 18),
+            Text('+${dp.toStringAsFixed(1)} DP', style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w900, height: 1)),
+            const SizedBox(height: 4),
+            Text(days >= 0.1 ? '相当于你的债务少还了 ${days.toStringAsFixed(1)} 天' : '已计入债务积分池', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(12)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.token_outlined, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text('积分池现有 ${avail.toStringAsFixed(1)} DP · 可转交银行', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+              ]),
+            ),
+            const SizedBox(height: 18),
+            Row(children: [
+              Expanded(child: OutlinedButton(style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white54)), onPressed: () => Navigator.pop(ctx), child: const Text('继续逛'))),
+              const SizedBox(width: 10),
+              Expanded(child: FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: XgColors.violet), onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtPointsPage()));
+              }, child: const Text('去清缴'))),
+            ]),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  final Product p;
+  final double monthly;
+  final void Function(OffsetQuote) onBuy;
+  const _ProductCard(this.p, {required this.monthly, required this.onBuy});
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AppState>();
+    final q = s.quoteFor(p);
+    final offset = p.platformMargin * q.finalMultiplier;
+    return XCard(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      padding: const EdgeInsets.all(14),
+      onTap: () => onBuy(q),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(width: 56, height: 56, decoration: BoxDecoration(color: XgColors.bg, borderRadius: BorderRadius.circular(14)), alignment: Alignment.center, child: Text(p.emoji, style: const TextStyle(fontSize: 28))),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+            const SizedBox(height: 2),
+            Text('${p.merchant} · ${p.desc}', style: const TextStyle(fontSize: 11, color: XgColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 8),
+            Row(children: [
+              Text(fmtMoney(p.price), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: XgColors.navy)),
+              const SizedBox(width: 8),
+              Tag(p.category, color: XgColors.info),
+            ]),
+          ])),
+          FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 34), padding: const EdgeInsets.symmetric(horizontal: 14)),
+            onPressed: () => onBuy(q),
+            child: const Text('购买', style: TextStyle(fontSize: 13)),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          DebtImpactBadge(dp: offset, monthlyRepayment: monthly),
+          const Spacer(),
+          Text('利润 ¥${p.platformMargin} × ${q.finalMultiplier.toStringAsFixed(1)}', style: const TextStyle(fontSize: 10, color: XgColors.textSecondary)),
+        ]),
+      ]),
     );
   }
 }

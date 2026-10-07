@@ -6,6 +6,8 @@ import '../../models/models.dart';
 import '../../services/agent_service.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
+import '../../core/module_info.dart';
+import '../widgets/module_widgets.dart';
 import 'shell_page.dart';
 
 void openAgent(BuildContext context, String code) {
@@ -18,10 +20,11 @@ class AgentHubPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     return Scaffold(
-      appBar: const XgAppBar(title: 'AI 智能域 · D03'),
+      appBar: const XgAppBar(title: 'AI 智能域 · D03', info: Modules.agents),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         children: [
+          const Padding(padding: EdgeInsets.only(bottom: 10), child: ModuleBanner(Modules.agents)),
           XCard(
             gradient: XgColors.sunrise,
             margin: EdgeInsets.zero,

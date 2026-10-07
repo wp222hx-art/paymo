@@ -7,7 +7,9 @@ import '../../state/app_state.dart';
 import '../admin/admin_pages.dart';
 import '../admin/offset_rules_page.dart';
 import '../bank/bank_pages.dart';
+import '../../core/module_info.dart';
 import '../widgets/common.dart';
+import '../widgets/module_widgets.dart';
 import 'agent_pages.dart';
 import 'community_page.dart';
 import 'home_page.dart';
@@ -81,7 +83,8 @@ class ShellPage extends StatelessWidget {
 class XgAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
   final List<Widget>? actions;
-  const XgAppBar({super.key, this.title, this.actions});
+  final ModuleInfo? info;
+  const XgAppBar({super.key, this.title, this.actions, this.info});
   @override
   Size get preferredSize => const Size.fromHeight(56);
   @override
@@ -121,6 +124,7 @@ class XgAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: [
         ...?actions,
+        if (info != null) InfoButton(info!),
         Stack(
           alignment: Alignment.topRight,
           children: [

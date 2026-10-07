@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
+import '../../core/module_info.dart';
+import '../widgets/module_widgets.dart';
 import '../pages/debt_points_pages.dart';
 import '../pages/shell_page.dart';
 import '../widgets/common.dart';
@@ -112,6 +114,7 @@ class _BankQueuePageState extends State<BankQueuePage> {
     return Scaffold(
       appBar: XgAppBar(
         title: org,
+        info: Modules.bankQueue,
         actions: [
           IconButton(
             icon: const Icon(Icons.fact_check_outlined),
@@ -138,6 +141,7 @@ class _BankQueuePageState extends State<BankQueuePage> {
             child: ListView(
               padding: const EdgeInsets.only(bottom: 24),
               children: [
+                const ModuleBanner(Modules.bankQueue),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: XCard(
@@ -386,10 +390,11 @@ class BankReconPage extends StatelessWidget {
     final s = context.watch<AppState>();
     final files = s.myBankRecon;
     return Scaffold(
-      appBar: AppBar(title: const Text('日终对账 · R-608')),
+      appBar: AppBar(title: const Text('日终对账 · R-608'), actions: const [InfoButton(Modules.bankQueue)]),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
+          const ModuleBanner(Modules.bankQueue),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: XCard(
@@ -1034,7 +1039,7 @@ class BankCasesPage extends StatelessWidget {
     final total = cases.fold(0.0, (a, c) => a + c.outstanding);
     final cleared = cases.where((c) => c.status == 3).length;
     return Scaffold(
-      appBar: const XgAppBar(title: '本行案件 · 租户视图'),
+      appBar: const XgAppBar(title: '本行案件 · 租户视图', info: Modules.bankQueue),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [

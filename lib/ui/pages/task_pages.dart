@@ -5,6 +5,8 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
+import '../../core/module_info.dart';
+import '../widgets/module_widgets.dart';
 import 'agent_pages.dart';
 import 'shell_page.dart';
 
@@ -42,12 +44,13 @@ class _TaskMarketPageState extends State<TaskMarketPage> {
     if (_match.isNotEmpty) tasks = [...tasks]..sort((a, b) => (_match[b.taskId] ?? 0).compareTo(_match[a.taskId] ?? 0));
     final myOrders = s.myOrders;
     return Scaffold(
-      appBar: XgAppBar(title: isOps ? '任务运营 · OP-103' : '任务市场 · D05', actions: [
+      appBar: XgAppBar(title: isOps ? '任务运营 · OP-103' : '任务市场 · D05', info: Modules.tasks, actions: [
         if (isMerchant) IconButton(icon: const Icon(Icons.add_box_outlined), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PublishTaskPage()))),
       ]),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
+          const ModuleBanner(Modules.tasks),
           if (!isMerchant && !isOps)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),

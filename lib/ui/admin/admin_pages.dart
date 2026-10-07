@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
+import '../../core/module_info.dart';
+import '../widgets/module_widgets.dart';
 import '../pages/community_page.dart';
 import '../pages/shell_page.dart';
 import '../pages/task_pages.dart';
@@ -27,10 +29,11 @@ class _RiskDashboardPageState extends State<RiskDashboardPage> {
     final all = s.riskCases;
     final list = _filter == 'all' ? all : all.where((c) => _filter == 'open' ? c.status != 'resolved' : c.status == 'resolved').toList();
     return Scaffold(
-      appBar: const XgAppBar(title: '风控管理 · M02'),
+      appBar: const XgAppBar(title: '风控管理 · M02', info: Modules.risk),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
+          const ModuleBanner(Modules.risk),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Row(children: [
@@ -220,12 +223,13 @@ class OpsDashboardPage extends StatelessWidget {
     final disputeRate = db.orders.isEmpty ? 0 : db.orders.where((o) => o.status == 55).length / db.orders.length * 100;
     final violation = db.contents.isEmpty ? 0 : db.contents.where((c) => c.moderationStatus == 3).length / db.contents.length * 100;
     return Scaffold(
-      appBar: XgAppBar(title: '运营看板 · OP-106', actions: [
+      appBar: XgAppBar(title: '运营看板 · OP-106', info: Modules.ops, actions: [
         IconButton(icon: const Icon(Icons.refresh), onPressed: () => s.call('GET', '/v1/admin/dashboard', apiId: 'ADM-OP-106', permission: 'ops.dashboard.read')),
       ]),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
+          const ModuleBanner(Modules.ops),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: XCard(

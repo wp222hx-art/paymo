@@ -269,12 +269,38 @@ class MockDb {
 
   // ───── 债务积分 / 商城 / 清缴 ─────
   static const products = <Product>[
-    Product(skuId: 'SKU-MOVIE', name: '电影票 · 《黎明之前》2D 单人', category: '本地生活', merchant: '星光影城', price: 45, platformMargin: 5, offsetMultiplier: 5, emoji: '🎬', desc: '平台利润 ¥5 × 5 倍 = 抵债 25 DP'),
-    Product(skuId: 'SKU-COFFEE', name: '生椰拿铁 · 大杯', category: '餐饮', merchant: '瓑幸咖啡', price: 19.9, platformMargin: 2, offsetMultiplier: 5, emoji: '☕', desc: '平台利润 ¥2 × 5 倍 = 抵债 10 DP'),
-    Product(skuId: 'SKU-SERUM', name: '星辰晨露精华 30ml', category: '美妆', merchant: '星辰品牌', price: 129, platformMargin: 18, offsetMultiplier: 4, emoji: '✨', desc: '平台利润 ¥18 × 4 倍 = 抵债 72 DP'),
-    Product(skuId: 'SKU-PHONE', name: '话费充值 100 元', category: '生活缴费', merchant: '中国移动', price: 100, platformMargin: 1.5, offsetMultiplier: 5, emoji: '📱', desc: '平台利润 ¥1.5 × 5 倍 = 抵债 7.5 DP'),
-    Product(skuId: 'SKU-COURSE', name: '《短视频剪辑从 0 到 1》课程', category: '教育', merchant: '橙光教育', price: 199, platformMargin: 60, offsetMultiplier: 3, emoji: '🎓', desc: '平台利润 ¥60 × 3 倍 = 抵债 180 DP · 同时提升能力标签'),
-    Product(skuId: 'SKU-GROCERY', name: '生鲜周卡 · 蜡菜包', category: '生鲜', merchant: '叨叨买菜', price: 88, platformMargin: 6, offsetMultiplier: 5, emoji: '🥬', desc: '平台利润 ¥6 × 5 倍 = 抵债 30 DP'),
+    // 本地生活
+    Product(skuId: 'SKU-MOVIE', name: '电影票 · 《黎明之前》2D 单人', category: '本地生活', merchant: '星光影城', price: 45, platformMargin: 5, offsetMultiplier: 5, emoji: '🎬', desc: '全国通兑 · 当日可退'),
+    Product(skuId: 'SKU-KTV', name: 'KTV 欢唱 3 小时 · 小包', category: '本地生活', merchant: '麦乐迪', price: 88, platformMargin: 12, offsetMultiplier: 5, emoji: '🎤', desc: '周一至周四 · 含果盘'),
+    Product(skuId: 'SKU-GYM', name: '健身房月卡 · 不限次', category: '本地生活', merchant: '乐刻运动', price: 199, platformMargin: 30, offsetMultiplier: 5, emoji: '🏋️', desc: '24h 自助 · 全城通用'),
+    Product(skuId: 'SKU-HAIR', name: '理发洗剪吹 · 资深总监', category: '本地生活', merchant: '文峰美发', price: 68, platformMargin: 10, offsetMultiplier: 5, emoji: '💇', desc: '到店核销 · 免预约'),
+    // 餐饮
+    Product(skuId: 'SKU-COFFEE', name: '生椰拿铁 · 大杯', category: '餐饮', merchant: '瑞幸咖啡', price: 19.9, platformMargin: 2, offsetMultiplier: 5, emoji: '☕', desc: '到店自取 · 全国门店'),
+    Product(skuId: 'SKU-LUNCH', name: '工作日午餐套餐 · 5 次卡', category: '餐饮', merchant: '老乡鸡', price: 99, platformMargin: 9, offsetMultiplier: 5, emoji: '🍱', desc: '荤素搭配 · 可换菜'),
+    Product(skuId: 'SKU-HOTPOT', name: '双人火锅套餐', category: '餐饮', merchant: '海底捞', price: 168, platformMargin: 14, offsetMultiplier: 5, emoji: '🍲', desc: '含锅底 + 6 菜 + 饮品'),
+    // 出行
+    Product(skuId: 'SKU-RIDE', name: '网约车券 · ¥50 充 ¥55', category: '出行', merchant: '滴滴出行', price: 50, platformMargin: 3, offsetMultiplier: 5, emoji: '🚕', desc: '即充即用 · 30 天有效'),
+    Product(skuId: 'SKU-TRAIN', name: '高铁票代购服务费', category: '出行', merchant: '12306 合作渠道', price: 5, platformMargin: 2, offsetMultiplier: 5, emoji: '🚄', desc: '代购 + 抢票 · 票价另计'),
+    Product(skuId: 'SKU-BIKE', name: '共享单车月卡', category: '出行', merchant: '哈啰出行', price: 25, platformMargin: 4, offsetMultiplier: 5, emoji: '🚲', desc: '30 天不限次 · 2h 内免费'),
+    // 生活缴费
+    Product(skuId: 'SKU-PHONE', name: '话费充值 100 元', category: '生活缴费', merchant: '中国移动', price: 100, platformMargin: 1.5, offsetMultiplier: 5, emoji: '📱', desc: '实时到账 · 三网通用'),
+    Product(skuId: 'SKU-POWER', name: '电费代缴 200 元', category: '生活缴费', merchant: '国家电网', price: 200, platformMargin: 1.2, offsetMultiplier: 5, emoji: '💡', desc: '24h 内到账 · 免手续费'),
+    Product(skuId: 'SKU-NET', name: '宽带续费 · 季度', category: '生活缴费', merchant: '中国电信', price: 299, platformMargin: 18, offsetMultiplier: 5, emoji: '📶', desc: '300M · 送 IPTV'),
+    // 生鲜
+    Product(skuId: 'SKU-GROCERY', name: '生鲜周卡 · 蔬菜包', category: '生鲜', merchant: '叮咚买菜', price: 88, platformMargin: 6, offsetMultiplier: 5, emoji: '🥬', desc: '每周 3 次配送 · 当季时蔬'),
+    Product(skuId: 'SKU-FRUIT', name: '时令水果箱 · 5kg', category: '生鲜', merchant: '百果园', price: 69, platformMargin: 8, offsetMultiplier: 5, emoji: '🍎', desc: '次日达 · 坏果包赔'),
+    // 美妆
+    Product(skuId: 'SKU-SERUM', name: '星辰晨露精华 30ml', category: '美妆', merchant: '星辰品牌', price: 129, platformMargin: 18, offsetMultiplier: 4, emoji: '✨', desc: '敏感肌可用 · 任务合作品牌'),
+    // 教育
+    Product(skuId: 'SKU-COURSE', name: '《短视频剪辑从 0 到 1》课程', category: '教育', merchant: '橙光教育', price: 199, platformMargin: 60, offsetMultiplier: 3, emoji: '🎓', desc: '完课可获能力标签 · 提升价值分'),
+    Product(skuId: 'SKU-ENGLISH', name: 'AI 口语陪练 · 月卡', category: '教育', merchant: '橙光教育', price: 99, platformMargin: 35, offsetMultiplier: 3, emoji: '🗣️', desc: '每日 20 分钟 · AI 纠音'),
+    // 医疗健康
+    Product(skuId: 'SKU-CHECKUP', name: '基础体检套餐', category: '医疗健康', merchant: '美年大健康', price: 299, platformMargin: 40, offsetMultiplier: 4, emoji: '🩺', desc: '28 项 · 周末可约'),
+    Product(skuId: 'SKU-MEDICINE', name: '常备药品礼包', category: '医疗健康', merchant: '京东健康', price: 59, platformMargin: 7, offsetMultiplier: 4, emoji: '💊', desc: '感冒 / 肠胃 / 创可贴'),
+  ];
+
+  static const shopCategories = <(String, String)>[
+    ('本地生活', '🎬'), ('餐饮', '🍜'), ('出行', '🚕'), ('生活缴费', '💡'), ('生鲜', '🥬'), ('美妆', '✨'), ('教育', '🎓'), ('医疗健康', '🩺'),
   ];
 
   late final List<DebtPointBatch> debtPoints = [
@@ -331,6 +357,8 @@ class MockDb {
     OffsetRule(ruleId: 'OR-CR-002', ruleType: 'credit_tier', name: '信用重塑 600~649 · +0.5', creditMin: 600, creditMax: 649, value: 0.5, createdBy: 'U1005', approvedBy: 'COO', hitCount: 2300),
     OffsetRule(ruleId: 'OR-CR-003', ruleType: 'credit_tier', name: '信用重塑 650~699 · +1.0', creditMin: 650, creditMax: 699, value: 1.0, createdBy: 'U1005', approvedBy: 'COO', hitCount: 1650),
     OffsetRule(ruleId: 'OR-CR-004', ruleType: 'credit_tier', name: '信用重塑 700+ · +1.5', creditMin: 700, creditMax: 999, value: 1.5, createdBy: 'U1005', approvedBy: 'COO', hitCount: 420),
+    OffsetRule(ruleId: 'OR-CAT-008', ruleType: 'category', name: '出行 · 基础倍率', category: '出行', value: 5, createdBy: 'U1005', approvedBy: 'COO', hitCount: 2980),
+    OffsetRule(ruleId: 'OR-CAT-009', ruleType: 'category', name: '医疗健康 · 基础倍率（民生扶持）', category: '医疗健康', value: 4, createdBy: 'U1005', approvedBy: 'COO', hitCount: 640),
     OffsetRule(ruleId: 'OR-CAP-001', ruleType: 'global_cap', name: '全局倍率上限（财务风控红线）', value: 6, createdBy: 'U1005', approvedBy: 'CFO', hitCount: 130),
     OffsetRule(ruleId: 'OR-CAT-007', ruleType: 'category', name: '文娱演出 · 基础倍率（灰度中）', category: '文娱演出', value: 6, status: 1, createdBy: 'U1005', hitCount: 12),
   ];

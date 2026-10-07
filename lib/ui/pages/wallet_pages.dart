@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
+import '../../core/module_info.dart';
 import '../widgets/common.dart';
+import '../widgets/module_widgets.dart';
 import 'debt_points_pages.dart';
 
 /// 支付密码二次验证 · API-A-016（返回 5 分钟令牌）
@@ -48,6 +50,7 @@ class WalletPage extends StatelessWidget {
     final me = s.me;
     return Scaffold(
       appBar: AppBar(title: const Text('钱包 · R-603 资金账户'), actions: [
+        const InfoButton(Modules.wallet),
         IconButton(icon: const Icon(Icons.menu_book_outlined), tooltip: '复式账本', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LedgerPage()))),
       ]),
       body: ListView(

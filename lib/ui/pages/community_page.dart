@@ -5,6 +5,8 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
+import '../../core/module_info.dart';
+import '../widgets/module_widgets.dart';
 import 'agent_pages.dart';
 import 'shell_page.dart';
 
@@ -24,12 +26,13 @@ class _CommunityPageState extends State<CommunityPage> {
     if (_feed == 1) list = list.where((c) => c.authorId != s.me.userId).toList();
     if (_feed == 2) list = list.where((c) => s.db.users[c.authorId]?.city == s.me.city).toList();
     return Scaffold(
-      appBar: XgAppBar(title: '社区 · D04 / D08', actions: [
+      appBar: XgAppBar(title: '社区 · D04 / D08', info: Modules.community, actions: [
         IconButton(icon: const Icon(Icons.edit_note), tooltip: '发布内容', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateContentPage()))),
       ]),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
+          const ModuleBanner(Modules.community),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: SegmentedButton<int>(

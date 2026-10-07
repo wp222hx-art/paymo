@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'core/theme.dart';
 import 'state/app_state.dart';
 import 'ui/pages/login_page.dart';
+import 'ui/pages/onboarding_page.dart';
 import 'ui/pages/shell_page.dart';
 
 void main() {
@@ -33,7 +34,9 @@ class XinguangApp extends StatelessWidget {
               body: Center(child: CircularProgressIndicator(color: XgColors.gold)),
             );
           }
-          return s.loggedIn ? const ShellPage() : const LoginPage();
+          if (!s.loggedIn) return const LoginPage();
+          if (s.needsOnboarding) return OnboardingPage(onDone: s.finishOnboarding);
+          return const ShellPage();
         },
       ),
     );

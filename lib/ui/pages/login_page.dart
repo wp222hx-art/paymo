@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/module_widgets.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -65,13 +66,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(gradient: XgColors.sunrise, borderRadius: BorderRadius.circular(14)),
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.wb_twilight, color: Colors.white, size: 28),
-                    ),
+                    const BrandMark(size: 56),
                     const SizedBox(width: 12),
                     const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

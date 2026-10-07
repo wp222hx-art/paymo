@@ -13,6 +13,22 @@ class AppState extends ChangeNotifier {
   String? _userId;
   bool _booted = false;
   int tabIndex = 0;
+  final Set<String> _onboarded = {};
+  bool get needsOnboarding => _userId != null && !_onboarded.contains(_userId);
+
+  Future<void> finishOnboarding() async {
+    if (_userId == null) return;
+    _onboarded.add(_userId!);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('onboarded', _onboarded.toList());
+    notifyListeners();
+  }
+
+  void replayOnboarding() {
+    if (_userId == null) return;
+    _onboarded.remove(_userId);
+    notifyListeners();
+  }
 
   bool get booted => _booted;
   bool get loggedIn => _userId != null;
@@ -22,8 +38,10 @@ class AppState extends ChangeNotifier {
 
   Future<void> boot() async {
     final prefs = await SharedPreferences.getInstance();
-    // 深链演示：?as=U1001 直接进入指定身份（模拟设备指纹免密登录）
+    _onboarded.addAll(prefs.getStringList('onboarded') ?? []);
+    // 深链演示：?as=U1001 直接进入指定身份（模拟设备指纹免密登录）；&guide=0 跳过引导
     final deepLink = Uri.base.queryParameters['as'];
+    if (deepLink != null && Uri.base.queryParameters['guide'] == '0') _onboarded.add(deepLink);
     final saved = deepLink ?? prefs.getString('session_user');
     if (saved != null && db.users.containsKey(saved)) {
       _userId = saved;
@@ -87,6 +105,15 @@ class AppState extends ChangeNotifier {
   }
 
   void refresh() => notifyListeners();
+
+  /// 当前用户月供（用于“相当于少还 N 天”换算）
+  double get myMonthlyRepayment {
+    final plans = myActivePlans;
+    if (plans.isNotEmpty) return plans.fold(0.0, (a, p) => a + p.monthlyAmount);
+    final dp = myDebtProfile;
+    if (dp != null && dp.totalDebt > 0) return dp.totalDebt / 24;
+    return 0;
+  }
 
   // ───── 视图数据 ─────
   DebtProfile? get myDebtProfile => db.debtProfiles[_userId];

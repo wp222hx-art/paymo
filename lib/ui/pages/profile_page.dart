@@ -4,7 +4,10 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
+import '../../core/module_info.dart';
 import '../admin/admin_pages.dart';
+import '../widgets/module_widgets.dart';
+import 'onboarding_page.dart';
 import '../widgets/common.dart';
 import 'community_page.dart';
 import 'debt_pages.dart';
@@ -20,10 +23,11 @@ class ProfilePage extends StatelessWidget {
     final s = context.watch<AppState>();
     final me = s.me;
     return Scaffold(
-      appBar: const XgAppBar(title: '我的 · D01 用户域'),
+      appBar: const XgAppBar(title: '我的 · D01 用户域', info: Modules.profile),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
+          const ModuleBanner(Modules.profile),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: XCard(
@@ -99,6 +103,7 @@ class ProfilePage extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(children: [
               _item(context, Icons.swap_horiz, '切换身份', () => showUserSwitcher(context)),
+              _item(context, Icons.school_outlined, '重新查看使用引导', () => Navigator.push(context, MaterialPageRoute(fullscreenDialog: true, builder: (_) => OnboardingPage(onDone: () => Navigator.pop(context))))),
               _item(context, Icons.edit_outlined, '修改昵称 · API-U-002', () => _rename(context)),
               _item(context, Icons.logout, '退出登录 · API-A-008', () => s.logout(), last: true, danger: true),
             ]),

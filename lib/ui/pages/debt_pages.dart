@@ -5,6 +5,8 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../state/app_state.dart';
 import '../widgets/common.dart';
+import '../../core/module_info.dart';
+import '../widgets/module_widgets.dart';
 import 'agent_pages.dart';
 import 'debt_points_pages.dart';
 import 'wallet_pages.dart';
@@ -18,6 +20,7 @@ class DebtCenterPage extends StatelessWidget {
     final cases = s.myCases;
     return Scaffold(
       appBar: AppBar(title: const Text('债务中心 · D06 还债与账户域'), actions: [
+        const InfoButton(Modules.debtCenter),
         IconButton(icon: const Icon(Icons.add_circle_outline), tooltip: '导入债务', onPressed: () => _importSheet(context)),
       ]),
       body: ListView(
