@@ -15,6 +15,22 @@ class _Step {
   const _Step(this.title, this.body, this.icon, this.grad, this.facts);
 }
 
+/// 按角色 / 步序挑一张电影级大图
+String _heroFor(UserRole role, int i) {
+  switch (role) {
+    case UserRole.bankOfficer:
+      return const ['assets/onboarding/step1.jpg', 'assets/onboarding/step2.jpg', 'assets/bg/home_hero.jpg', 'assets/onboarding/step5.jpg'][i % 4];
+    case UserRole.riskOfficer:
+      return const ['assets/onboarding/step5.jpg', 'assets/onboarding/step4.jpg', 'assets/onboarding/step2.jpg'][i % 3];
+    case UserRole.opsManager:
+      return const ['assets/bg/home_hero.jpg', 'assets/onboarding/step4.jpg', 'assets/onboarding/step3.jpg'][i % 3];
+    case UserRole.merchant:
+      return const ['assets/onboarding/step1.jpg', 'assets/onboarding/step4.jpg', 'assets/onboarding/step3.jpg'][i % 3];
+    default:
+      return 'assets/onboarding/step${(i % 5) + 1}.jpg';
+  }
+}
+
 /// 使用引导：按角色呈现不同的 4~5 步
 class OnboardingPage extends StatefulWidget {
   final VoidCallback onDone;
@@ -72,76 +88,100 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final last = _idx == steps.length - 1;
     return Scaffold(
       backgroundColor: XgColors.navyDark,
-      body: SafeArea(
-        child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
-            child: Row(children: [
-              const BrandMark(size: 36),
-              const SizedBox(width: 10),
-              const Text('新光云 · 使用引导', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-              const Spacer(),
-              TextButton(onPressed: widget.onDone, child: const Text('跳过', style: TextStyle(color: Colors.white54))),
-            ]),
+      body: Stack(fit: StackFit.expand, children: [
+        // 电影级背景大图（随页切换淡入淡出）
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 500),
+          layoutBuilder: (current, previous) => Stack(fit: StackFit.expand, children: [...previous, if (current != null) current]),
+          child: SizedBox.expand(
+            key: ValueKey(_idx),
+            child: Image.asset(_heroFor(s.me.role, _idx), fit: BoxFit.cover, alignment: Alignment.topCenter),
           ),
-          Expanded(
-            child: PageView.builder(
-              controller: _ctrl,
-              onPageChanged: (i) => setState(() => _idx = i),
-              itemCount: steps.length,
-              itemBuilder: (_, i) {
-                final st = steps[i];
-                return Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(gradient: LinearGradient(colors: st.grad, begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(28), boxShadow: [BoxShadow(color: st.grad.first.withValues(alpha: 0.4), blurRadius: 30, offset: const Offset(0, 12))]),
-                      child: Icon(st.icon, color: Colors.white, size: 48),
-                    ),
-                    const SizedBox(height: 32),
-                    Text('${i + 1} / ${steps.length}', style: const TextStyle(color: XgColors.gold, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 2)),
-                    const SizedBox(height: 8),
-                    Text(st.title, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800, height: 1.25)),
-                    const SizedBox(height: 14),
-                    Text(st.body, style: const TextStyle(color: Colors.white70, fontSize: 15, height: 1.7)),
-                    const SizedBox(height: 24),
-                    Row(children: st.facts.map((f) => Expanded(child: Container(
-                      margin: const EdgeInsets.only(right: 10),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.1))),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(f.$1, style: const TextStyle(color: Colors.white54, fontSize: 10)),
-                        const SizedBox(height: 2),
-                        Text(f.$2, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-                      ]),
-                    ))).toList()),
-                  ]),
-                );
-              },
+        ),
+        // 上下渐隐遮罩，保证文字可读
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.0, 0.18, 0.42, 0.68, 1.0],
+              colors: [Color(0xB3071A3A), Color(0x00071A3A), Color(0x00071A3A), Color(0xE6071A3A), Color(0xFF071A3A)],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-            child: Row(children: [
-              ...List.generate(steps.length, (i) => AnimatedContainer(duration: const Duration(milliseconds: 250), width: i == _idx ? 22 : 6, height: 6, margin: const EdgeInsets.only(right: 6), decoration: BoxDecoration(color: i == _idx ? XgColors.gold : Colors.white24, borderRadius: BorderRadius.circular(3)))),
-              const Spacer(),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: XgColors.gold, foregroundColor: XgColors.navyDark, minimumSize: const Size(140, 46)),
-                onPressed: () {
-                  if (last) {
-                    widget.onDone();
-                  } else {
-                    _ctrl.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-                  }
+        ),
+        SafeArea(
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 12, 0),
+              child: Row(children: [
+                const BrandMark(size: 38),
+                const SizedBox(width: 10),
+                const Text('新光云 · 使用引导', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, shadows: [Shadow(color: Colors.black54, blurRadius: 8)])),
+                const Spacer(),
+                TextButton(onPressed: widget.onDone, child: const Text('跳过', style: TextStyle(color: Colors.white70))),
+              ]),
+            ),
+            Expanded(
+              child: PageView.builder(
+                controller: _ctrl,
+                onPageChanged: (i) => setState(() => _idx = i),
+                itemCount: steps.length,
+                itemBuilder: (_, i) {
+                  final st = steps[i];
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.end, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(gradient: LinearGradient(colors: st.grad, begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: st.grad.first.withValues(alpha: 0.5), blurRadius: 18, offset: const Offset(0, 6))]),
+                          child: Icon(st.icon, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Text('STEP ${i + 1} / ${steps.length}', style: const TextStyle(color: XgColors.gold, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 2.5)),
+                      ]),
+                      const SizedBox(height: 16),
+                      Text(st.title, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800, height: 1.2, shadows: [Shadow(color: Colors.black54, blurRadius: 12)])),
+                      const SizedBox(height: 12),
+                      Text(st.body, style: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 14.5, height: 1.7)),
+                      const SizedBox(height: 18),
+                      Row(children: st.facts.map((f) => Expanded(child: Container(
+                        margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.18))),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(f.$1, style: const TextStyle(color: Colors.white60, fontSize: 10)),
+                          const SizedBox(height: 2),
+                          Text(f.$2, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                        ]),
+                      ))).toList()),
+                    ]),
+                  );
                 },
-                child: Text(last ? '开始使用' : '下一步'),
               ),
-            ]),
-          ),
-        ]),
-      ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 22),
+              child: Row(children: [
+                ...List.generate(steps.length, (i) => AnimatedContainer(duration: const Duration(milliseconds: 250), width: i == _idx ? 22 : 6, height: 6, margin: const EdgeInsets.only(right: 6), decoration: BoxDecoration(color: i == _idx ? XgColors.gold : Colors.white30, borderRadius: BorderRadius.circular(3)))),
+                const Spacer(),
+                FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: XgColors.gold, foregroundColor: XgColors.navyDark, minimumSize: const Size(148, 48), textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  onPressed: () {
+                    if (last) {
+                      widget.onDone();
+                    } else {
+                      _ctrl.nextPage(duration: const Duration(milliseconds: 320), curve: Curves.easeOut);
+                    }
+                  },
+                  child: Text(last ? '开始使用' : '下一步'),
+                ),
+              ]),
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 }

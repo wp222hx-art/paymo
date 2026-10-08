@@ -142,21 +142,44 @@ class XCard extends StatelessWidget {
   final EdgeInsets margin;
   final VoidCallback? onTap;
   final Gradient? gradient;
-  const XCard({super.key, required this.child, this.padding = const EdgeInsets.all(16), this.margin = const EdgeInsets.symmetric(horizontal: 16), this.onTap, this.gradient});
+  /// 背景实拍图（叠在 gradient 之下，gradient 以半透明覆盖提升可读性）
+  final String? image;
+  final double imageOpacity;
+  const XCard({super.key, required this.child, this.padding = const EdgeInsets.all(16), this.margin = const EdgeInsets.symmetric(horizontal: 16), this.onTap, this.gradient, this.image, this.imageOpacity = 0.82});
   @override
   Widget build(BuildContext context) {
-    final card = Container(
-      margin: margin,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: gradient == null ? Colors.white : null,
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(16),
-        border: gradient == null ? Border.all(color: XgColors.divider) : null,
-        boxShadow: gradient != null ? [BoxShadow(color: XgColors.navy.withValues(alpha: 0.25), blurRadius: 16, offset: const Offset(0, 6))] : null,
-      ),
-      child: child,
-    );
+    Widget card;
+    if (image != null) {
+      card = Container(
+        margin: margin,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: XgColors.navy.withValues(alpha: 0.28), blurRadius: 18, offset: const Offset(0, 8))],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(children: [
+            Positioned.fill(child: Image.asset(image!, fit: BoxFit.cover, alignment: Alignment.centerRight)),
+            if (gradient != null)
+              Positioned.fill(child: Opacity(opacity: imageOpacity, child: DecoratedBox(decoration: BoxDecoration(gradient: gradient)))),
+            Padding(padding: padding, child: child),
+          ]),
+        ),
+      );
+    } else {
+      card = Container(
+        margin: margin,
+        padding: padding,
+        decoration: BoxDecoration(
+          color: gradient == null ? Colors.white : null,
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(16),
+          border: gradient == null ? Border.all(color: XgColors.divider) : null,
+          boxShadow: gradient != null ? [BoxShadow(color: XgColors.navy.withValues(alpha: 0.25), blurRadius: 16, offset: const Offset(0, 6))] : null,
+        ),
+        child: child,
+      );
+    }
     if (onTap == null) return card;
     return GestureDetector(onTap: onTap, child: card);
   }
@@ -255,16 +278,24 @@ class GradientAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = XgColors.agentGradient(agent.gradientIndex);
+    final r = size * 0.32;
     return Container(
       width: size,
       height: size,
+      padding: EdgeInsets.all(size * 0.045),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size * 0.32),
+        borderRadius: BorderRadius.circular(r),
         gradient: LinearGradient(colors: g, begin: Alignment.topLeft, end: Alignment.bottomRight),
         boxShadow: [BoxShadow(color: g.first.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4))],
       ),
-      alignment: Alignment.center,
-      child: Text(agent.emoji, style: TextStyle(fontSize: size * 0.45)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(r * 0.85),
+        child: Image.asset(
+          agent.avatarAsset,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Center(child: Text(agent.emoji, style: TextStyle(fontSize: size * 0.45))),
+        ),
+      ),
     );
   }
 }

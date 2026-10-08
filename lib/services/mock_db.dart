@@ -303,6 +303,13 @@ class MockDb {
     ('本地生活', '🎬'), ('餐饮', '🍜'), ('出行', '🚕'), ('生活缴费', '💡'), ('生鲜', '🥬'), ('美妆', '✨'), ('教育', '🎓'), ('医疗健康', '🩺'),
   ];
 
+  /// 分类实拍图
+  static const shopCategoryImages = <String, String>{
+    '本地生活': 'assets/shop/local.jpg', '餐饮': 'assets/shop/dining.jpg', '出行': 'assets/shop/transport.jpg', '生活缴费': 'assets/shop/utility.jpg',
+    '生鲜': 'assets/shop/grocery.jpg', '美妆': 'assets/shop/beauty.jpg', '教育': 'assets/shop/education.jpg', '医疗健康': 'assets/shop/health.jpg',
+  };
+  static String categoryImage(String cat) => shopCategoryImages[cat] ?? 'assets/shop/local.jpg';
+
   late final List<DebtPointBatch> debtPoints = [
     // DP7001 + DP7002 = 462.4 → 已提交清缴单 CL8002（待银行受理）
     DebtPointBatch(batchId: 'DP7001', userId: 'U1001', source: DebtPointSource.task, faceValue: 205.2, cashBacked: 205.2, refId: 'ST6001', title: '任务结算 · 星辰晨露精华短视频（60%）', consumed: 205.2, createdAt: DateTime(2026, 9, 8, 14, 22)),

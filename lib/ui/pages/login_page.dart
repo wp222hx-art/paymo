@@ -56,7 +56,9 @@ class _LoginPageState extends State<LoginPage> {
     final users = context.watch<AppState>().allUsers;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: XgColors.navyGradient),
+        decoration: const BoxDecoration(
+          image: DecorationImage(image: AssetImage('assets/bg/login_bg.jpg'), fit: BoxFit.cover, alignment: Alignment.bottomCenter),
+        ),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
@@ -66,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    const BrandMark(size: 56),
+                    const BrandMark(size: 68),
                     const SizedBox(width: 12),
                     const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

@@ -194,6 +194,8 @@ class TaskDetailPage extends StatelessWidget {
           XCard(
             margin: EdgeInsets.zero,
             gradient: XgColors.navyGradient,
+              image: 'assets/onboarding/step4.jpg',
+              imageOpacity: 0.78,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [Tag(t.taskType, color: Colors.white, bg: Colors.white.withValues(alpha: 0.2)), const SizedBox(width: 6), Tag(t.statusLabel, color: XgColors.gold, bg: XgColors.gold.withValues(alpha: 0.2))]),
               const SizedBox(height: 10),

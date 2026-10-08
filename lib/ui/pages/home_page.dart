@@ -36,6 +36,8 @@ class HomePage extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: XCard(
               gradient: XgColors.navyGradient,
+              image: 'assets/bg/home_hero.jpg',
+              imageOpacity: 0.72,
               margin: EdgeInsets.zero,
               padding: const EdgeInsets.all(20),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DebtCenterPage())),

@@ -27,6 +27,8 @@ class AgentHubPage extends StatelessWidget {
           const Padding(padding: EdgeInsets.only(bottom: 10), child: ModuleBanner(Modules.agents)),
           XCard(
             gradient: XgColors.sunrise,
+            image: 'assets/onboarding/step5.jpg',
+            imageOpacity: 0.78,
             margin: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

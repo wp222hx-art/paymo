@@ -22,3 +22,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icons/
+    - assets/onboarding/
+    - assets/agents/
+    - assets/shop/
+    - assets/bg/

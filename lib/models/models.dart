@@ -783,6 +783,12 @@ class AgentDef {
   final String emoji;
   final String greeting;
   final List<String> quickPrompts;
+  /// 3D 角色头像资源路径（由 code 推导）
+  String get avatarAsset => 'assets/agents/${_avatarNames[code] ?? 'planner'}.jpg';
+  static const _avatarNames = {
+    'AG-01': 'planner', 'AG-02': 'coach', 'AG-03': 'matcher', 'AG-04': 'creator',
+    'AG-05': 'negotiator', 'AG-06': 'legal', 'AG-07': 'avatar', 'AG-08': 'watcher',
+  };
   const AgentDef({
     required this.code,
     required this.name,

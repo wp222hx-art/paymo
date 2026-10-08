@@ -448,9 +448,13 @@ class _OffsetShopPageState extends State<OffsetShopPage> {
           // Hero
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: XCard(
-              margin: EdgeInsets.zero,
-              gradient: XgColors.sunrise,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Stack(children: [
+                Positioned.fill(child: Image.asset('assets/onboarding/step3.jpg', fit: BoxFit.cover, alignment: Alignment.center)),
+                Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [XgColors.coral.withValues(alpha: 0.88), XgColors.violet.withValues(alpha: 0.86)])))),
+                Padding(
+              padding: const EdgeInsets.all(18),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const Row(children: [Icon(Icons.wb_sunny_outlined, color: Colors.white), SizedBox(width: 8), Text('边消费，边平债', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20))]),
                 const SizedBox(height: 6),
@@ -477,6 +481,8 @@ class _OffsetShopPageState extends State<OffsetShopPage> {
                   ]),
                 ),
               ]),
+                ),
+              ]),
             ),
           ),
 
@@ -490,20 +496,31 @@ class _OffsetShopPageState extends State<OffsetShopPage> {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
-              childAspectRatio: 0.95,
+              childAspectRatio: 0.78,
               children: MockDb.shopCategories.map((c) {
                 final sel = _cat == c.$1;
                 final n = all.where((p) => p.category == c.$1).length;
                 return GestureDetector(
                   onTap: () => setState(() => _cat = sel ? null : c.$1),
-                  child: Container(
-                    decoration: BoxDecoration(color: sel ? XgColors.navy : Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: sel ? XgColors.navy : XgColors.divider)),
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text(c.$2, style: const TextStyle(fontSize: 24)),
-                      const SizedBox(height: 4),
-                      Text(c.$1, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sel ? Colors.white : XgColors.textPrimary)),
-                      Text('$n 项', style: TextStyle(fontSize: 9, color: sel ? Colors.white70 : XgColors.textSecondary)),
-                    ]),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: sel ? XgColors.gold : Colors.transparent, width: 2),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: sel ? 0.22 : 0.10), blurRadius: sel ? 14 : 8, offset: const Offset(0, 4))],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(fit: StackFit.expand, children: [
+                        Image.asset(MockDb.categoryImage(c.$1), fit: BoxFit.cover),
+                        DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: const [0.35, 1.0], colors: [Colors.transparent, sel ? XgColors.navy.withValues(alpha: 0.95) : Colors.black.withValues(alpha: 0.72)]))),
+                        Positioned(left: 6, right: 6, bottom: 6, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(c.$1, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Colors.white, shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
+                          Text('$n 项', style: TextStyle(fontSize: 9, color: sel ? XgColors.gold : Colors.white70)),
+                        ])),
+                        if (sel) const Positioned(top: 5, right: 5, child: Icon(Icons.check_circle, color: XgColors.gold, size: 16)),
+                      ]),
+                    ),
                   ),
                 );
               }).toList(),
@@ -527,19 +544,30 @@ class _OffsetShopPageState extends State<OffsetShopPage> {
                   return GestureDetector(
                     onTap: () => _buy(context, s, p, q),
                     child: Container(
-                      width: 150,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: XgColors.divider)),
+                      width: 160,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: XgColors.divider), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 3))]),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Row(children: [Text(p.emoji, style: const TextStyle(fontSize: 26)), const Spacer(), DebtImpactBadge(dp: dp, monthlyRepayment: monthly, compact: true)]),
-                        const SizedBox(height: 8),
-                        Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, height: 1.3)),
-                        const Spacer(),
-                        Row(children: [
-                          Text(fmtMoney(p.price), style: const TextStyle(fontWeight: FontWeight.w800, color: XgColors.navy)),
-                          const Spacer(),
-                          Text('抵 ${(dp / p.price * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 10, color: XgColors.coral, fontWeight: FontWeight.w700)),
-                        ]),
+                        SizedBox(
+                          height: 82,
+                          child: Stack(fit: StackFit.expand, children: [
+                            Image.asset(MockDb.categoryImage(p.category), fit: BoxFit.cover),
+                            Positioned(left: 6, top: 6, child: Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(8)), child: Text(p.emoji, style: const TextStyle(fontSize: 14)))),
+                            Positioned(right: 6, bottom: 6, child: DebtImpactBadge(dp: dp, monthlyRepayment: monthly, compact: true)),
+                          ]),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 6),
+                            Row(children: [
+                              Text(fmtMoney(p.price), style: const TextStyle(fontWeight: FontWeight.w800, color: XgColors.navy)),
+                              const Spacer(),
+                              Text('抵 ${(dp / p.price * 100).toStringAsFixed(0)}%', style: const TextStyle(fontSize: 10, color: XgColors.coral, fontWeight: FontWeight.w700)),
+                            ]),
+                          ]),
+                        ),
                       ]),
                     ),
                   );
@@ -642,11 +670,20 @@ class _OffsetShopPageState extends State<OffsetShopPage> {
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: XgColors.violet.withValues(alpha: 0.45), blurRadius: 30, offset: const Offset(0, 12))]),
+          child: Stack(children: [
+            Positioned.fill(child: Image.asset('assets/onboarding/step1.jpg', fit: BoxFit.cover, alignment: Alignment.topCenter)),
+            Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [XgColors.coral.withValues(alpha: 0.55), XgColors.violet.withValues(alpha: 0.92)])))),
+            Padding(
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(gradient: XgColors.sunrise, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: XgColors.violet.withValues(alpha: 0.4), blurRadius: 30, offset: const Offset(0, 12))]),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('🌅', style: TextStyle(fontSize: 48)),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), boxShadow: [BoxShadow(color: XgColors.gold.withValues(alpha: 0.6), blurRadius: 24)]),
+              child: const BrandMark(size: 64),
+            ),
+            const SizedBox(height: 10),
             const Text('这笔消费，也在还债', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
             Text('${p.emoji} ${p.name}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
@@ -674,6 +711,8 @@ class _OffsetShopPageState extends State<OffsetShopPage> {
               }, child: const Text('去清缴'))),
             ]),
           ]),
+            ),
+          ]),
         ),
       ),
     );
@@ -696,7 +735,13 @@ class _ProductCard extends StatelessWidget {
       onTap: () => onBuy(q),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(width: 56, height: 56, decoration: BoxDecoration(color: XgColors.bg, borderRadius: BorderRadius.circular(14)), alignment: Alignment.center, child: Text(p.emoji, style: const TextStyle(fontSize: 28))),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(width: 64, height: 64, child: Stack(fit: StackFit.expand, children: [
+              Image.asset(MockDb.categoryImage(p.category), fit: BoxFit.cover),
+              Positioned(right: 3, bottom: 3, child: Container(padding: const EdgeInsets.all(3), decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.92), borderRadius: BorderRadius.circular(7)), child: Text(p.emoji, style: const TextStyle(fontSize: 13)))),
+            ])),
+          ),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
