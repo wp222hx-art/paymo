@@ -1,0 +1,417 @@
+{
+  "goods_coffee": {
+    "nodeId": "node_my8mrmc9c8",
+    "submitId": "69e844fa-a1e0-4b46-89d5-fbdf8dff7b2b",
+    "submitted": true
+  },
+  "goods_tea": {
+    "nodeId": "node_jr6f8newn5",
+    "submitId": "29ec8e6d-1410-4a53-957d-456004e0d6d4",
+    "submitted": true
+  },
+  "goods_dining": {
+    "nodeId": "node_600pg2k6y5",
+    "submitId": "b255c912-1f64-4a97-905a-e0b73dde84dd",
+    "submitted": true
+  },
+  "goods_fastfood": {
+    "nodeId": "node_bad49bdhnj",
+    "submitId": "140735ce-902b-47b5-ae9e-3a189fd0ceff",
+    "submitted": true
+  },
+  "goods_movie": {
+    "nodeId": "node_tj0m5e02q5",
+    "submitId": "4f02911d-b841-4d92-863c-cb65c2225808",
+    "submitted": true
+  },
+  "goods_ktv": {
+    "nodeId": "node_yt7mgtegrp",
+    "submitId": "04719161-59c2-4317-929a-26476233f276",
+    "submitted": true
+  },
+  "goods_fitness": {
+    "nodeId": "node_3pg5g0wznj",
+    "submitId": "9c2b6e61-2b65-4a46-95f1-72016bd93b87",
+    "submitted": true
+  },
+  "goods_beauty_service": {
+    "nodeId": "node_j4ar8wzaye",
+    "submitId": "fc7cbbb0-337d-48ed-8077-b41a73d9a64d",
+    "submitted": true
+  },
+  "goods_ride": {
+    "nodeId": "node_pkq5q9e7bb",
+    "submitId": "aa451e50-17bf-4a27-bf1a-b38fcd109ef3",
+    "submitted": true
+  },
+  "goods_hotel": {
+    "nodeId": "node_jh1nh84x6p",
+    "submitId": "f22ae1ea-a786-4254-b5ba-bfc2d001afcf",
+    "submitted": true
+  },
+  "goods_scenic": {
+    "nodeId": "node_80868j7sz2",
+    "submitId": "98d11407-791b-493b-ac07-4820fae6b5c2",
+    "submitted": true
+  },
+  "goods_phone": {
+    "nodeId": "node_97w3xyxa69",
+    "submitId": "b699c15f-34d6-4efe-b029-20adb4dc6aa5",
+    "submitted": true
+  },
+  "goods_utility": {
+    "nodeId": "node_bffndnrkb6",
+    "submitId": "f5b6abf5-bf28-41bb-90e7-cfd4c92b46ee",
+    "submitted": true
+  },
+  "goods_member": {
+    "nodeId": "node_n89xn4a7kx",
+    "submitId": "c1c0de74-bdab-4dfc-b531-71cc73297019",
+    "submitted": true
+  },
+  "goods_fruit": {
+    "nodeId": "node_05mcxet0n6",
+    "submitId": "ab4de10f-5c90-4361-a2bb-3e5c4bbf3383",
+    "submitted": true
+  },
+  "goods_veg": {
+    "nodeId": "node_shw7vxh7yv",
+    "submitId": "c15605df-f5a7-42b7-a4c9-b5288560faf0",
+    "submitted": true
+  },
+  "goods_meat": {
+    "nodeId": "node_atp2nnd11v",
+    "submitId": "c446b6e0-9451-4294-97e2-d8d97bbb9292",
+    "submitted": true
+  },
+  "goods_seafood": {
+    "nodeId": "node_s0nvc0txvz",
+    "submitId": "642a23f9-9d32-47f8-807d-b3b094d225cb",
+    "submitted": true
+  },
+  "goods_grain": {
+    "nodeId": "node_2vnbcscnnx",
+    "submitId": "0f916bd0-52a8-47ad-a410-bba1c9b11222",
+    "submitted": true
+  },
+  "goods_snack": {
+    "nodeId": "node_b108s1xx9e",
+    "submitId": "6f063e74-6f83-411c-abd1-200cd8f2a711",
+    "submitted": true
+  },
+  "goods_drink": {
+    "nodeId": "node_rmjcbpjkxa",
+    "submitId": "95a1d98e-b92a-4ffb-9b35-6356ae0943a9",
+    "submitted": true
+  },
+  "goods_dairy": {
+    "nodeId": "node_jfkcdhp2mh",
+    "submitId": "d2197381-9310-45fb-99e6-ef0d3a0814a3",
+    "submitted": true
+  },
+  "goods_tissue": {
+    "nodeId": "node_zzapfabchf",
+    "submitId": "58e72b49-24ec-41f3-978f-7210866fb925",
+    "submitted": true
+  },
+  "goods_laundry": {
+    "nodeId": "node_d09zmxkh27",
+    "submitId": "e8e7895a-4eb1-42a0-885e-b1a514f4b1e2",
+    "submitted": true
+  },
+  "goods_kitchen": {
+    "nodeId": "node_b4x56f3sgv",
+    "submitId": "c4532af3-bfaf-47ec-aab0-c7ee95da9202",
+    "submitted": true
+  },
+  "goods_oral": {
+    "nodeId": "node_2g9wb5qxab",
+    "submitId": "8d24bd41-a671-498c-ba23-bfd946bfd135",
+    "submitted": true
+  },
+  "goods_hair": {
+    "nodeId": "node_73t2per270",
+    "submitId": "93c89fc7-5fff-440b-88f9-2fb36e17da79",
+    "submitted": true
+  },
+  "goods_skincare": {
+    "nodeId": "node_rqkzmxjeqd",
+    "submitId": "74ea2b0b-816b-4241-91fe-e0f53e716366",
+    "submitted": true
+  },
+  "goods_baby": {
+    "nodeId": "node_xf8ebb3gtp",
+    "submitId": "ef291af5-87b3-4408-b4f3-bf2653bddcf4",
+    "submitted": true
+  },
+  "goods_health": {
+    "nodeId": "node_aswbnhyj99",
+    "submitId": "6ab86099-9653-40e0-a08f-dca018082cef",
+    "submitted": true
+  },
+  "brand_hero": {
+    "nodeId": "node_het2e5jyj7",
+    "submitId": "ff79ab4f-6526-4e7e-9d8e-9aae64d6dad2",
+    "submitted": true
+  },
+  "brand_hero_m": {
+    "nodeId": "node_rxfkayj73p",
+    "submitId": "0714c334-906c-4adc-94df-319d74b9e8f6",
+    "submitted": true
+  },
+  "home_banner_1": {
+    "nodeId": "node_mw75fcqncy",
+    "submitId": "f54c6c3f-53d2-4d58-a32c-ec170dafc5c0",
+    "submitted": true
+  },
+  "home_banner_2": {
+    "nodeId": "node_gafqaxhs6j",
+    "submitId": "60932d78-c98f-4454-9ad7-3a25acdc49dd",
+    "submitted": true
+  },
+  "home_banner_3": {
+    "nodeId": "node_ar84pj0cva",
+    "submitId": "c1993f39-d683-4427-b1ad-6aec8843a998",
+    "submitted": true
+  },
+  "home_banner_4": {
+    "nodeId": "node_5zxagb7ek4",
+    "submitId": "0f073304-f869-4064-9ea8-8fb8d0669340",
+    "submitted": true
+  },
+  "cat_food": {
+    "nodeId": "node_7cvtcr9zzk",
+    "submitId": "618ca79e-c90a-43f9-89b5-89a4a713c21b",
+    "submitted": true
+  },
+  "cat_fun": {
+    "nodeId": "node_73vq38595d",
+    "submitId": "0b9c69f4-e112-43ad-ae86-9af09c7b8e89",
+    "submitted": true
+  },
+  "cat_travel": {
+    "nodeId": "node_30bffkg5sm",
+    "submitId": "bfa5e2f0-2bfc-4383-b4a3-5d0ca5f85836",
+    "submitted": true
+  },
+  "cat_bill": {
+    "nodeId": "node_f1nyfwdgdg",
+    "submitId": "bcb5be7c-9fcd-4cb0-b208-32b3cfaf4f4f",
+    "submitted": true
+  },
+  "cat_fresh": {
+    "nodeId": "node_c4r1myptm1",
+    "submitId": "bb41d6ec-fc16-4d19-aec1-e98777966595",
+    "submitted": true
+  },
+  "cat_snack": {
+    "nodeId": "node_747jmzhyt6",
+    "submitId": "6b859a75-25fb-4cff-93ad-d37392792030",
+    "submitted": true
+  },
+  "cat_daily": {
+    "nodeId": "node_53z368g13b",
+    "submitId": "1c3064f6-7a88-4893-9a18-0b6852b4cb2b",
+    "submitted": true
+  },
+  "cat_care": {
+    "nodeId": "node_3kj5qhxwwe",
+    "submitId": "0ecf9fee-3736-49df-843e-a6bd4536bb1c",
+    "submitted": true
+  },
+  "cat_baby": {
+    "nodeId": "node_qpg1mnr2z2",
+    "submitId": "2beabcb2-2b44-452b-8a4c-f32bc17977fe",
+    "submitted": true
+  },
+  "bank_query": {
+    "nodeId": "node_dbqf2dfp8b",
+    "submitId": "dc007bba-a96e-4ed5-b35a-901c9b491e72",
+    "submitted": true
+  },
+  "bank_hall": {
+    "nodeId": "node_c0ee00h3wx",
+    "submitId": "da7f0969-126d-4a40-8539-e3a8748331b5",
+    "submitted": true
+  },
+  "clear_center": {
+    "nodeId": "node_2qeymdg093",
+    "submitId": "ecbe417f-3e6b-40c6-b858-1a6cfb4dd078",
+    "submitted": true
+  },
+  "clear_success": {
+    "nodeId": "node_f9nh9gs0wb",
+    "submitId": "7ff69a3d-19be-438d-afbf-87185d03c82e",
+    "submitted": true
+  },
+  "cert_letter": {
+    "nodeId": "node_x0d92bgfn5",
+    "submitId": "b7f790b8-620d-4816-8b2e-37ef311bd9b0",
+    "submitted": true
+  },
+  "cert_bg": {
+    "nodeId": "node_qzrc35vz2j",
+    "submitId": "d7aecc40-2f57-4a46-9f66-465346a362ef",
+    "submitted": true
+  },
+  "progress": {
+    "nodeId": "node_qsvct156sg",
+    "submitId": "10874d35-2145-4354-9dd8-85650dd221e4",
+    "submitted": true
+  },
+  "score_up": {
+    "nodeId": "node_cjqtr234mj",
+    "submitId": "ffe9f5ab-5baa-4ec4-9996-0b3c461a0dbd",
+    "submitted": true
+  },
+  "wallet": {
+    "nodeId": "node_qgy33ttgny",
+    "submitId": "39c00e11-eafe-4b67-b157-da3e3f65e6dc",
+    "submitted": true
+  },
+  "orders_empty": {
+    "nodeId": "node_mv7v2r6nzg",
+    "submitId": "9c893386-07a9-4bf7-8281-a712b2c3c55a",
+    "submitted": true
+  },
+  "cart_empty": {
+    "nodeId": "node_swkavh7f80",
+    "submitId": "1b1393cf-fa1b-41c3-a408-06ea50f5a4c7",
+    "submitted": true
+  },
+  "guide_step1": {
+    "nodeId": "node_ty39s8gr1f",
+    "submitId": "5694a7bb-3a02-4958-a24d-519da117dd1f",
+    "submitted": true
+  },
+  "guide_step2": {
+    "nodeId": "node_xzhm64nfpa",
+    "submitId": "37689752-3aac-403b-999f-ddf4b9890f84",
+    "submitted": true
+  },
+  "guide_step3": {
+    "nodeId": "node_9p0aqh83ef",
+    "submitId": "47a14a96-712c-4ec7-b459-3599f20497f9",
+    "submitted": true
+  },
+  "guide_step4": {
+    "nodeId": "node_4c110fwvny",
+    "submitId": "1d6a0fcb-5ced-46aa-9e2c-1e78f7da17eb",
+    "submitted": true
+  },
+  "guide_step5": {
+    "nodeId": "node_y3ytj8gfv7",
+    "submitId": "274f4071-cf82-419a-93f1-2458e23e7e82",
+    "submitted": true
+  },
+  "login_bg": {
+    "nodeId": "node_dvqd0t7ffy",
+    "submitId": "e4518669-c1de-45f9-85a8-39a160305703",
+    "submitted": true
+  },
+  "admin_login": {
+    "nodeId": "node_4y3zdjk9ch",
+    "submitId": "155738ee-1ef8-4a59-bf82-7c2a2b01db41",
+    "submitted": true
+  },
+  "empty_debt": {
+    "nodeId": "node_1kb9aj4x1p",
+    "submitId": "2a3db634-fabc-4a65-8f05-3e222371854c",
+    "submitted": true
+  },
+  "partner_banks": {
+    "nodeId": "node_5pe7cgfq0v",
+    "submitId": "c82344ef-2da7-4de3-b3b4-ef6eee0fa23f",
+    "submitted": true
+  },
+  "service": {
+    "nodeId": "node_fgej50a0tg",
+    "submitId": "f3f3cd05-2fdc-462f-93eb-1c20a7bafbbf",
+    "submitted": true
+  },
+  "security": {
+    "nodeId": "node_z6jbzf8nqn",
+    "submitId": "5d03ba55-d9df-47e1-84a7-f278d30f18b8",
+    "submitted": true
+  },
+  "invite": {
+    "nodeId": "node_d12vn2b5rv",
+    "submitId": "6dbbb7c0-6fc0-4314-b9e7-7393f7ee195c",
+    "submitted": true
+  },
+  "night_city": {
+    "nodeId": "node_9c2egedrvw",
+    "submitId": "2fc5a5dc-18cb-48da-b4a0-bd6691c836fb",
+    "submitted": true
+  },
+  "labor_hero": {
+    "nodeId": "node_ctd5h39ep5",
+    "submitId": "65098db4-1ae8-439c-bf20-8b0d7f8395c9",
+    "submitted": true
+  },
+  "labor_banner": {
+    "nodeId": "node_7a0h5cn3cp",
+    "submitId": "14ba2bc7-7c8b-4876-a7cc-34de18dd0da6",
+    "submitted": true
+  },
+  "labor_content": {
+    "nodeId": "node_e5t02qxqs7",
+    "submitId": "24ccc125-c5fa-47cc-8492-bde34547b7c9",
+    "submitted": true
+  },
+  "labor_survey": {
+    "nodeId": "node_h5m912me60",
+    "submitId": "280c8cf9-4b3c-48fb-b952-98b65c1c43f3",
+    "submitted": true
+  },
+  "labor_visit": {
+    "nodeId": "node_h1zmv9sj0x",
+    "submitId": "ce834351-4e07-4ab9-8efa-9ce640122496",
+    "submitted": true
+  },
+  "labor_service": {
+    "nodeId": "node_f9d8x5psfe",
+    "submitId": "88bfa4a8-549d-4bf9-ac9b-726783757911",
+    "submitted": true
+  },
+  "labor_promo": {
+    "nodeId": "node_aqrha4nvt6",
+    "submitId": "606c85d1-2248-4326-aea2-84c2d4ce4f70",
+    "submitted": true
+  },
+  "labor_skill": {
+    "nodeId": "node_xf6s6sdx0g",
+    "submitId": "aa1879d4-8874-4783-aaf3-77f88f23002a",
+    "submitted": true
+  },
+  "labor_label": {
+    "nodeId": "node_jn069p9a5h",
+    "submitId": "d7c01570-8c35-4709-8f85-dd46a91d4748",
+    "submitted": true
+  },
+  "labor_delivery": {
+    "nodeId": "node_q14z0cxg8h",
+    "submitId": "cb39756e-6b1b-4464-ba2b-ea05931df783",
+    "submitted": true
+  },
+  "merchant_hero": {
+    "nodeId": "node_f0e8r7p33j",
+    "submitId": "89a2511e-7b51-49ff-a9c6-b02b972a2447",
+    "submitted": true
+  },
+  "community_hero": {
+    "nodeId": "node_h3cemasgp0",
+    "submitId": "fd900a3e-f148-4ddc-993a-25f22a65e152",
+    "submitted": true
+  },
+  "kyc": {
+    "nodeId": "node_hk3br9sfnx",
+    "submitId": "0c425fee-cd06-4341-9274-915e4c3f4481",
+    "submitted": true
+  },
+  "ai_assistant": {
+    "nodeId": "node_wbcw5b1drh",
+    "submitId": "2662a1ac-15ff-463a-a893-f96a66b65a0f",
+    "submitted": true
+  }
+}

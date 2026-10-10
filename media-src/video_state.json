@@ -1,0 +1,108 @@
+{
+  "items": {
+    "v00_intro": {
+      "videoNode": "node_ebk2m64ww7",
+      "videoSubmit": "53eee588-d64c-4016-85b7-c5da4a6314de",
+      "audioNode": "node_daj9hqnvvd",
+      "audioSubmit": "67ef17fd-63f5-4815-8263-aefa8e74aaa8",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v01_bank": {
+      "videoNode": "node_ycckk1ttdd",
+      "videoSubmit": "af3e9419-fce9-4865-8d99-e9f2db39dbc7",
+      "audioNode": "node_v049sy0fnp",
+      "audioSubmit": "dc384786-d653-4d49-9400-1ede57d4aaf1",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v02_mall": {
+      "videoNode": "node_2dw97rmnwd",
+      "videoSubmit": "d119c31b-947d-4b2c-a686-e7c539f2c420",
+      "audioNode": "node_cvmqnmzb6x",
+      "audioSubmit": "d7abc503-7734-4a6c-a906-666b6a4a6531",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v03_pay": {
+      "videoNode": "node_9bcx5d0k9y",
+      "videoSubmit": "69bded7d-451d-44fc-95ef-1be5c8876209",
+      "audioNode": "node_zx6y5v8ans",
+      "audioSubmit": "958e8ff0-0d7d-4e84-98fb-5a606d2db909",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v04_receive": {
+      "videoNode": "node_m7hw0mk4y9",
+      "videoSubmit": "cd2200af-cac8-470b-9945-b0ccdb54246e",
+      "audioNode": "node_qej1g0qfy8",
+      "audioSubmit": "5d03b399-ba5c-459f-8a4c-788cfaac37b1",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v05_credit": {
+      "videoNode": "node_8cxr448yeb",
+      "videoSubmit": "d28baf10-e3d1-499a-963e-436883faf2d3",
+      "audioNode": "node_xvhvfve8s3",
+      "audioSubmit": "f7974348-7582-4af7-a42b-0dcedb50714b",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v06_clear": {
+      "videoNode": "node_jf6tn2nvcz",
+      "videoSubmit": "3570978f-68ef-4ff6-95e3-d028f0106e64",
+      "audioNode": "node_a6f6ed66mc",
+      "audioSubmit": "d300f411-f021-43f1-b02c-a95eaefd252a",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v07_progress": {
+      "videoNode": "node_s4c4xxh1bn",
+      "videoSubmit": "08f1c7c9-57c8-442f-8609-1af76bf25e5d",
+      "audioNode": "node_55bxymn8cy",
+      "audioSubmit": "d0e4b757-6774-4200-b9df-cd75931b339d",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v08_cert": {
+      "videoNode": "node_bty2asdm5f",
+      "videoSubmit": "283230f1-99f2-4a24-9a10-10bac7030df8",
+      "audioNode": "node_ymddp1f8rh",
+      "audioSubmit": "7e8d2d50-a79f-4ac5-ac79-d0fd07701ae0",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v09_score": {
+      "videoNode": "node_kcp07e648v",
+      "videoSubmit": "52824bd4-e676-435f-a5c3-57a053cf4545",
+      "audioNode": "node_tyv12btn9e",
+      "audioSubmit": "025c2508-8951-42fe-9df9-df9537af09f2",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v10_task": {
+      "videoNode": "node_dv5f9v7yyb",
+      "videoSubmit": "85f9d58b-83e8-4574-838a-7e5332b7e3ec",
+      "audioNode": "node_tpmgg5kr1z",
+      "audioSubmit": "053472b7-f2fd-48f6-9865-1508015adb3d",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v11_submit": {
+      "videoNode": "node_8vb070ct1e",
+      "videoSubmit": "c6fe63f8-47e8-4a1b-9509-59ddc1fa08a1",
+      "audioNode": "node_j9n38gbnq7",
+      "audioSubmit": "5226e0ed-88c9-4089-8e44-75baa379e8e8",
+      "audioDone": true,
+      "videoDone": true
+    },
+    "v12_income": {
+      "videoNode": "node_vsmzn876es",
+      "videoSubmit": "875acfe9-84a3-4fd4-bc57-ef57a6d2f549",
+      "audioNode": "node_7g5vekczhe",
+      "audioSubmit": "6c4f054c-2750-4323-89d4-29894a483a18",
+      "audioDone": true,
+      "videoDone": true
+    }
+  }
+}

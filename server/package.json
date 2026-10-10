@@ -1,0 +1,22 @@
+{
+  "name": "xinguang-mall-server",
+  "version": "1.0.0",
+  "description": "新光云 · 消费还债电商后端（商品 / 订单 / 模拟支付 / 佣金倍率 / 债务积分 / 债务清算）",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/index.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/index.js",
+    "reset": "node --disable-warning=ExperimentalWarning src/reset.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "dependencies": {
+    "compression": "^1.8.2",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "multer": "^2.0.2"
+  }
+}

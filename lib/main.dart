@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
-import 'state/app_state.dart';
-import 'ui/pages/login_page.dart';
-import 'ui/pages/onboarding_page.dart';
-import 'ui/pages/shell_page.dart';
+import 'state/mall_state.dart';
+import 'ui/mall/entry_pages.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
     ChangeNotifierProvider(
-      create: (_) => AppState()..boot(),
+      create: (_) => MallState()..boot(),
       child: const XinguangApp(),
     ),
   );
@@ -23,22 +21,10 @@ class XinguangApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '新光云 · DebtFlow AI',
+      title: '星光云 · 会花钱，也会轻松清偿',
       debugShowCheckedModeBanner: false,
       theme: buildXgTheme(),
-      home: Consumer<AppState>(
-        builder: (_, s, __) {
-          if (!s.booted) {
-            return const Scaffold(
-              backgroundColor: XgColors.navy,
-              body: Center(child: CircularProgressIndicator(color: XgColors.gold)),
-            );
-          }
-          if (!s.loggedIn) return const LoginPage();
-          if (s.needsOnboarding) return OnboardingPage(onDone: s.finishOnboarding);
-          return const ShellPage();
-        },
-      ),
+      home: const RootRouter(),
     );
   }
 }

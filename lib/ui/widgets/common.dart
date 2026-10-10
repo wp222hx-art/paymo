@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
-import '../../models/models.dart';
 
 String fmtMoney(num v, {bool sign = false}) {
   final f = NumberFormat('#,##0.00', 'en_US');
@@ -14,56 +13,6 @@ String fmtMoney(num v, {bool sign = false}) {
 String fmtInt(num v) => NumberFormat('#,##0', 'en_US').format(v);
 String fmtDate(DateTime d) => DateFormat('MM-dd HH:mm').format(d);
 String fmtDay(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
-
-/// 显示 API 调用结果（统一响应结构）
-void showApiResult(BuildContext context, ApiResponse r, {String? successText}) {
-  final ok = r.ok;
-  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: ok ? XgColors.success : XgColors.danger,
-      duration: const Duration(seconds: 3),
-      content: Row(
-        children: [
-          Icon(ok ? Icons.check_circle : Icons.error_outline, color: Colors.white, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(ok ? (successText ?? 'success') : r.message, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                Text('code=${r.code} · trace_id=${r.traceId}${r.idempotencyReplay ? ' · Idempotency-Replay' : ''}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-class Avatar extends StatelessWidget {
-  final UserProfile user;
-  final double size;
-  const Avatar(this.user, {super.key, this.size = 44});
-  @override
-  Widget build(BuildContext context) {
-    final grad = XgColors.agentGradient(user.userId.hashCode % 8);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(colors: grad),
-        boxShadow: [BoxShadow(color: grad.first.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 3))],
-      ),
-      alignment: Alignment.center,
-      child: Text(user.initials, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: size * 0.42)),
-    );
-  }
-}
 
 class Tag extends StatelessWidget {
   final String text;
@@ -271,36 +220,6 @@ class StateFlow extends StatelessWidget {
   }
 }
 
-class GradientAvatar extends StatelessWidget {
-  final AgentDef agent;
-  final double size;
-  const GradientAvatar(this.agent, {super.key, this.size = 52});
-  @override
-  Widget build(BuildContext context) {
-    final g = XgColors.agentGradient(agent.gradientIndex);
-    final r = size * 0.32;
-    return Container(
-      width: size,
-      height: size,
-      padding: EdgeInsets.all(size * 0.045),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(r),
-        gradient: LinearGradient(colors: g, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        boxShadow: [BoxShadow(color: g.first.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(r * 0.85),
-        child: Image.asset(
-          agent.avatarAsset,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Center(child: Text(agent.emoji, style: TextStyle(fontSize: size * 0.45))),
-        ),
-      ),
-    );
-  }
-}
-
-/// 简易折线图（赎回轨迹）
 class MiniLineChart extends StatelessWidget {
   final List<double> values;
   final Color color;

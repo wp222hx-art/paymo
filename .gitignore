@@ -43,3 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Node / runtime data
+node_modules/
+server/data/
+server/public/uploads/
+*.db
+*.db-shm
+*.db-wal
+secret.key
+.env
